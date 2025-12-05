@@ -1,0 +1,149 @@
+# GitHub Labels Configuration
+# Use with: https://github.com/marketplace/actions/github-labeler
+
+# Type labels
+- name: "type: bug"
+  color: "d73a4a"
+  description: "Something isn't working"
+
+- name: "type: feature"
+  color: "a2eeef"
+  description: "New feature or request"
+
+- name: "type: documentation"
+  color: "0075ca"
+  description: "Improvements or additions to documentation"
+
+- name: "type: refactor"
+  color: "fbca04"
+  description: "Code refactoring"
+
+- name: "type: test"
+  color: "1d76db"
+  description: "Adding or updating tests"
+
+- name: "type: chore"
+  color: "fef2c0"
+  description: "Maintenance tasks"
+
+# Priority labels
+- name: "priority: critical"
+  color: "b60205"
+  description: "Critical priority"
+
+- name: "priority: high"
+  color: "d93f0b"
+  description: "High priority"
+
+- name: "priority: medium"
+  color: "fbca04"
+  description: "Medium priority"
+
+- name: "priority: low"
+  color: "0e8a16"
+  description: "Low priority"
+
+# Status labels
+- name: "status: in progress"
+  color: "yellow"
+  description: "Work in progress"
+
+- name: "status: blocked"
+  color: "red"
+  description: "Blocked by dependencies"
+
+- name: "status: needs review"
+  color: "orange"
+  description: "Needs code review"
+
+- name: "status: ready to merge"
+  color: "green"
+  description: "Ready to be merged"
+
+# Size labels
+- name: "size/xs"
+  color: "3CBF00"
+  description: "Extra small PR (0-10 lines)"
+
+- name: "size/s"
+  color: "5D9801"
+  description: "Small PR (11-100 lines)"
+
+- name: "size/m"
+  color: "7F7203"
+  description: "Medium PR (101-500 lines)"
+
+- name: "size/l"
+  color: "A14C05"
+  description: "Large PR (501-1000 lines)"
+
+- name: "size/xl"
+  color: "C32607"
+  description: "Extra large PR (1000+ lines)"
+
+# Component labels
+- name: "component: frontend"
+  color: "61dafb"
+  description: "Frontend (Next.js)"
+
+- name: "component: backend"
+  color: "6db33f"
+  description: "Backend (Spring Boot)"
+
+- name: "component: database"
+  color: "336791"
+  description: "Database related"
+
+- name: "component: ci/cd"
+  color: "2088FF"
+  description: "CI/CD pipeline"
+
+- name: "component: docker"
+  color: "2496ED"
+  description: "Docker configuration"
+
+# Scope labels
+- name: "scope: auth"
+  color: "c5def5"
+  description: "Authentication & authorization"
+
+- name: "scope: vault"
+  color: "c5def5"
+  description: "Vault management"
+
+- name: "scope: crypto"
+  color: "c5def5"
+  description: "Cryptography"
+
+- name: "scope: security"
+  color: "c5def5"
+  description: "Security features"
+
+- name: "scope: ui"
+  color: "c5def5"
+  description: "User interface"
+
+- name: "scope: api"
+  color: "c5def5"
+  description: "API endpoints"
+
+# Special labels
+- name: "good first issue"
+  color: "7057ff"
+  description: "Good for newcomers"
+
+- name: "help wanted"
+  color: "008672"
+  description: "Extra attention is needed"
+
+- name: "dependencies"
+  color: "0366d6"
+  description: "Pull requests that update a dependency file"
+
+- name: "security"
+  color: "ee0701"
+  description: "Security related"
+
+- name: "breaking change"
+  color: "d73a4a"
+  description: "Breaking change"

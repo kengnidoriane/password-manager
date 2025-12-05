@@ -1,0 +1,49 @@
+# Environment files with secrets (DO NOT COMMIT)
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+backend/.env
+frontend/.env.local
+
+# Note: .env.example and .env.prod.example SHOULD be committed (they're templates)
+
+
+# IDE
+.idea/
+.vscode/
+.kiro/*
+*.iml
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Docker
+docker-compose.override.yml
+
+# Temporary files
+*.tmp
+*.temp
+
+# Security - SSH keys and certificates
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+id_rsa*
+github_deploy_key*
+
+# Backup files
+*.sql
+*.dump
+*.backup
+*.tar.gz
