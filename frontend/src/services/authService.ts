@@ -145,6 +145,30 @@ export class AuthService {
   }
 
   /**
+   * Initialize session after successful login
+   * @param loginResponse Response from login API
+   * @param userEmail User's email address
+   */
+  static initializeUserSession(loginResponse: LoginResponse, userEmail: string): void {
+    const { useAuthStore } = require('@/stores/authStore');
+    const store = useAuthStore.getState();
+    
+    // Set user information
+    store.setUser({
+      id: loginResponse.userId,
+      email: userEmail,
+      createdAt: new Date().toISOString()
+    });
+    
+    // Initialize session
+    store.initializeSession(
+      loginResponse.token,
+      loginResponse.expiresAt,
+      loginResponse.userId
+    );
+  }
+
+  /**
    * Logout user and invalidate session
    * @param token JWT token to invalidate
    * @returns Promise<void>

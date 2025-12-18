@@ -48,18 +48,8 @@ export function LoginForm() {
         twoFactorCode: data.twoFactorCode,
       });
 
-      // Update auth store
-      setUser({
-        id: response.userId,
-        email: data.email,
-        createdAt: new Date().toISOString(),
-      });
-
-      setSession({
-        token: response.token,
-        expiresAt: response.expiresAt,
-        isLocked: false,
-      });
+      // Initialize session using the auth service
+      authService.initializeUserSession(response, data.email);
 
       // Redirect to vault
       router.push('/vault');
