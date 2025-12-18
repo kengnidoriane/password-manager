@@ -1,0 +1,20 @@
+#Thu Dec 18 15:12:58 WEST 2025
+C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\config\\CorsConfig.java=1764937413665
+C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\config\\JwtProperties.java=1764937961373
+C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\config\\OpenApiConfig.java=1764937428962
+C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\config\\RedisConfig.java=1764937451311
+C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\config\\SecurityConfig.java=1766060890078
+C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\config\\SecurityProperties.java=1764937984859
+C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\config\\SessionProperties.java=1764937968691
+C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\controller\\HealthController.java=1764937499210
+C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\dto\\LoginRequest.java=1766061054714
+C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\dto\\LoginResponse.java=1766061066934
+C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\dto\\RegisterRequest.java=1766061505887
+C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\dto\\RegisterResponse.java=1766061516164
+C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\entity\\BackupCode.java=1766059340314
+C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\entity\\Session.java=1764955403695
+C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\entity\\UserAccount.java=1766059383021
+C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\repository\\BackupCodeRepository.java=1766059357127
+C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\repository\\UserRepository.java=1764955435198
+C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\service\\CustomUserDetailsService.java=1764955496718
+configuration*?=D2E6D14F01A42105637CBE6F2C6442CFB7E9BD91

@@ -255,7 +255,7 @@ public class AuthController {
             );
 
             // Record successful login
-            authenticationService.recordSuccessfulLogin(loginRequest.getEmail(), clientIp);
+            authenticationService.recordSuccessfulLogin(loginRequest.getEmail(), clientIp, userAgent);
 
             // Update user's last login timestamp
             authenticationService.updateLastLogin(user.getId());
@@ -278,7 +278,8 @@ public class AuthController {
         } catch (BadCredentialsException e) {
             // Record failed login attempt
             String clientIp = getClientIpAddress(request);
-            authenticationService.recordFailedLogin(loginRequest.getEmail(), clientIp);
+            String userAgent = request.getHeader("User-Agent");
+            authenticationService.recordFailedLogin(loginRequest.getEmail(), clientIp, userAgent, "Invalid credentials");
             
             logger.warn("Failed login attempt for email: {} from IP: {}", 
                        loginRequest.getEmail(), clientIp);

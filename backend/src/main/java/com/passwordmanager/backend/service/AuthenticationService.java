@@ -49,14 +49,17 @@ public class AuthenticationService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final PasswordEncoder passwordEncoder;
     private final SecureRandom secureRandom;
+    private final AuditLogService auditLogService;
 
     public AuthenticationService(UserRepository userRepository,
                                RedisTemplate<String, Object> redisTemplate,
-                               PasswordEncoder passwordEncoder) {
+                               PasswordEncoder passwordEncoder,
+                               AuditLogService auditLogService) {
         this.userRepository = userRepository;
         this.redisTemplate = redisTemplate;
         this.passwordEncoder = passwordEncoder;
         this.secureRandom = new SecureRandom();
+        this.auditLogService = auditLogService;
     }
 
     /**
@@ -84,8 +87,10 @@ public class AuthenticationService {
      * 
      * @param email User email
      * @param ipAddress Client IP address
+     * @param userAgent User agent string
+     * @param reason Failure reason
      */
-    public void recordFailedLogin(String email, String ipAddress) {
+    public void recordFailedLogin(String email, String ipAddress, String userAgent, String reason) {
         String attemptsKey = FAILED_ATTEMPTS_KEY_PREFIX + email + ":" + ipAddress;
         String lockoutKey = LOCKOUT_KEY_PREFIX + email + ":" + ipAddress;
 
@@ -102,6 +107,9 @@ public class AuthenticationService {
 
             logger.warn("Failed login attempt {} for {} from {}", attempts, email, ipAddress);
 
+            // Log failed authentication attempt
+            auditLogService.logFailedAuthentication(email, ipAddress, userAgent, reason);
+
             // Check if we need to apply lockout
             if (attempts >= MAX_FAILED_ATTEMPTS) {
                 // Calculate lockout duration with exponential backoff
@@ -116,6 +124,9 @@ public class AuthenticationService {
                 
                 logger.warn("Account locked out for {} seconds after {} failed attempts for {} from {}", 
                            lockoutSeconds, attempts, email, ipAddress);
+
+                // Log account lockout
+                auditLogService.logAccountLockout(email, ipAddress, attempts.intValue(), lockoutSeconds);
             }
 
         } catch (Exception e) {
@@ -129,8 +140,9 @@ public class AuthenticationService {
      * 
      * @param email User email
      * @param ipAddress Client IP address
+     * @param userAgent User agent string
      */
-    public void recordSuccessfulLogin(String email, String ipAddress) {
+    public void recordSuccessfulLogin(String email, String ipAddress, String userAgent) {
         String attemptsKey = FAILED_ATTEMPTS_KEY_PREFIX + email + ":" + ipAddress;
         String lockoutKey = LOCKOUT_KEY_PREFIX + email + ":" + ipAddress;
 
@@ -141,6 +153,9 @@ public class AuthenticationService {
 
             logger.info("Successful login for {} from {} - cleared rate limiting counters", 
                        email, ipAddress);
+
+            // Log successful authentication
+            auditLogService.logSuccessfulAuthentication(email, ipAddress, userAgent);
 
         } catch (Exception e) {
             logger.error("Failed to clear rate limiting counters for {} from {}: {}", 
