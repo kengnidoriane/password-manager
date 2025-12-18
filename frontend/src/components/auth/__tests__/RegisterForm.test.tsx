@@ -51,8 +51,8 @@ describe('RegisterForm', () => {
     render(<RegisterForm />);
     
     expect(screen.getByLabelText(/^email$/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/master password/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/confirm master password/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^master password$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^confirm master password$/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /create account/i })).toBeInTheDocument();
   });
 
@@ -103,8 +103,8 @@ describe('RegisterForm', () => {
     fireEvent.change(passwordInput, { target: { value: 'StrongPassword123!' } });
 
     await waitFor(() => {
-      expect(screen.getByText(/password strength/i)).toBeInTheDocument();
-      expect(screen.getByText(/good/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/password strength/i)[0]).toBeInTheDocument();
+      expect(screen.getByText(/^good$/i)).toBeInTheDocument();
     });
   });
 });
