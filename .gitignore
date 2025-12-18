@@ -4,8 +4,8 @@
 .env.*.local
 .env.production
 .env.staging
-backend/.env
-frontend/.env.local
+./backend/.env
+./frontend/.env.local
 
 # Note: .env.example and .env.prod.example SHOULD be committed (they're templates)
 
