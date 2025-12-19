@@ -2,6 +2,10 @@ package com.passwordmanager.backend.controller;
 
 import com.passwordmanager.backend.dto.CredentialRequest;
 import com.passwordmanager.backend.dto.CredentialResponse;
+import com.passwordmanager.backend.dto.FolderRequest;
+import com.passwordmanager.backend.dto.FolderResponse;
+import com.passwordmanager.backend.dto.TagRequest;
+import com.passwordmanager.backend.dto.TagResponse;
 import com.passwordmanager.backend.service.VaultService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -430,5 +434,661 @@ public class VaultController {
         }
 
         return request.getRemoteAddr();
+    }
+
+    // ========== Folder Management Endpoints ==========
+
+    /**
+     * Creates a new folder for organizing vault entries.
+     * 
+     * @param request The folder creation request
+     * @param httpRequest HTTP request for logging purposes
+     * @return The created folder with metadata
+     */
+    @PostMapping("/folder")
+    @Operation(
+        summary = "Create a new folder",
+        description = "Creates a new folder for organizing vault entries. " +
+                     "Validates nesting depth limits and name uniqueness within parent folder."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "201",
+            description = "Folder created successfully",
+            content = @Content(schema = @Schema(implementation = FolderResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid request data or nesting depth exceeded",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - invalid or expired token",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        )
+    })
+    public ResponseEntity<?> createFolder(
+            @Valid @RequestBody FolderRequest request,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID userId = getCurrentUserId();
+            String clientIp = getClientIpAddress(httpRequest);
+            
+            logger.debug("Creating folder '{}' for user: {} from IP: {}", request.getName(), userId, clientIp);
+            
+            FolderResponse response = vaultService.createFolder(userId, request);
+            
+            logger.info("Created folder '{}' ({}) for user: {} from IP: {}", 
+                       response.getName(), response.getId(), userId, clientIp);
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid folder creation request: {}", e.getMessage());
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "invalid_request");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            
+        } catch (Exception e) {
+            logger.error("Error creating folder: {}", e.getMessage(), e);
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "creation_failed");
+            errorResponse.put("message", "Failed to create folder");
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * Updates an existing folder.
+     * 
+     * @param folderId The ID of the folder to update
+     * @param request The updated folder data
+     * @param httpRequest HTTP request for logging purposes
+     * @return The updated folder with metadata
+     */
+    @PutMapping("/folder/{id}")
+    @Operation(
+        summary = "Update an existing folder",
+        description = "Updates an existing folder. Validates nesting depth limits and prevents circular references."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Folder updated successfully",
+            content = @Content(schema = @Schema(implementation = FolderResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid request data or would create circular reference",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Folder not found",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - invalid or expired token",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        )
+    })
+    public ResponseEntity<?> updateFolder(
+            @Parameter(description = "Folder ID", required = true)
+            @PathVariable("id") UUID folderId,
+            @Valid @RequestBody FolderRequest request,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID userId = getCurrentUserId();
+            String clientIp = getClientIpAddress(httpRequest);
+            
+            logger.debug("Updating folder {} for user: {} from IP: {}", folderId, userId, clientIp);
+            
+            FolderResponse response = vaultService.updateFolder(userId, folderId, request);
+            
+            logger.info("Updated folder '{}' ({}) for user: {} from IP: {}", 
+                       response.getName(), folderId, userId, clientIp);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid folder update request for {}: {}", folderId, e.getMessage());
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "invalid_request");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            
+        } catch (Exception e) {
+            logger.error("Error updating folder {}: {}", folderId, e.getMessage(), e);
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "update_failed");
+            errorResponse.put("message", "Failed to update folder");
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * Soft deletes a folder and all its contents.
+     * 
+     * @param folderId The ID of the folder to delete
+     * @param httpRequest HTTP request for logging purposes
+     * @return Success message with deletion timestamp
+     */
+    @DeleteMapping("/folder/{id}")
+    @Operation(
+        summary = "Delete a folder (move to trash)",
+        description = "Soft deletes a folder and all its contents by moving them to trash. " +
+                     "The folder and contents can be restored within 30 days before permanent deletion."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Folder moved to trash successfully",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Folder not found",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - invalid or expired token",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        )
+    })
+    public ResponseEntity<?> deleteFolder(
+            @Parameter(description = "Folder ID", required = true)
+            @PathVariable("id") UUID folderId,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID userId = getCurrentUserId();
+            String clientIp = getClientIpAddress(httpRequest);
+            
+            logger.debug("Deleting folder {} for user: {} from IP: {}", folderId, userId, clientIp);
+            
+            vaultService.deleteFolder(userId, folderId);
+            
+            logger.info("Deleted folder {} for user: {} from IP: {}", folderId, userId, clientIp);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Folder moved to trash successfully");
+            response.put("folderId", folderId);
+            response.put("deletedAt", LocalDateTime.now());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (IllegalArgumentException e) {
+            logger.warn("Folder not found for deletion {}: {}", folderId, e.getMessage());
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "not_found");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+            
+        } catch (Exception e) {
+            logger.error("Error deleting folder {}: {}", folderId, e.getMessage(), e);
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "deletion_failed");
+            errorResponse.put("message", "Failed to delete folder");
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * Retrieves the folder tree for the authenticated user.
+     * 
+     * @param httpRequest HTTP request for logging purposes
+     * @return List of folders organized in tree structure
+     */
+    @GetMapping("/folders")
+    @Operation(
+        summary = "Retrieve folder tree",
+        description = "Gets all active folders for the authenticated user organized in a tree structure."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Folder tree retrieved successfully",
+            content = @Content(
+                mediaType = "application/json",
+                array = @ArraySchema(schema = @Schema(implementation = FolderResponse.class))
+            )
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - invalid or expired token",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        )
+    })
+    public ResponseEntity<?> getFolderTree(HttpServletRequest httpRequest) {
+        try {
+            UUID userId = getCurrentUserId();
+            String clientIp = getClientIpAddress(httpRequest);
+            
+            logger.debug("Retrieving folder tree for user: {} from IP: {}", userId, clientIp);
+            
+            List<FolderResponse> folders = vaultService.getFolderTree(userId);
+            
+            logger.info("Retrieved {} folders for user: {} from IP: {}", 
+                       folders.size(), userId, clientIp);
+            
+            return ResponseEntity.ok(folders);
+            
+        } catch (Exception e) {
+            logger.error("Error retrieving folder tree: {}", e.getMessage(), e);
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "retrieval_failed");
+            errorResponse.put("message", "Failed to retrieve folder tree");
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    // ========== Tag Management Endpoints ==========
+
+    /**
+     * Creates a new tag for categorizing vault entries.
+     * 
+     * @param request The tag creation request
+     * @param httpRequest HTTP request for logging purposes
+     * @return The created tag with metadata
+     */
+    @PostMapping("/tag")
+    @Operation(
+        summary = "Create a new tag",
+        description = "Creates a new tag for categorizing vault entries. " +
+                     "Tag names must be unique per user."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "201",
+            description = "Tag created successfully",
+            content = @Content(schema = @Schema(implementation = TagResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid request data or tag name already exists",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - invalid or expired token",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        )
+    })
+    public ResponseEntity<?> createTag(
+            @Valid @RequestBody TagRequest request,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID userId = getCurrentUserId();
+            String clientIp = getClientIpAddress(httpRequest);
+            
+            logger.debug("Creating tag '{}' for user: {} from IP: {}", request.getName(), userId, clientIp);
+            
+            TagResponse response = vaultService.createTag(userId, request);
+            
+            logger.info("Created tag '{}' ({}) for user: {} from IP: {}", 
+                       response.getName(), response.getId(), userId, clientIp);
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid tag creation request: {}", e.getMessage());
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "invalid_request");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            
+        } catch (Exception e) {
+            logger.error("Error creating tag: {}", e.getMessage(), e);
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "creation_failed");
+            errorResponse.put("message", "Failed to create tag");
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * Updates an existing tag.
+     * 
+     * @param tagId The ID of the tag to update
+     * @param request The updated tag data
+     * @param httpRequest HTTP request for logging purposes
+     * @return The updated tag with metadata
+     */
+    @PutMapping("/tag/{id}")
+    @Operation(
+        summary = "Update an existing tag",
+        description = "Updates an existing tag. Tag names must remain unique per user."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Tag updated successfully",
+            content = @Content(schema = @Schema(implementation = TagResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid request data or tag name already exists",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Tag not found",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - invalid or expired token",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        )
+    })
+    public ResponseEntity<?> updateTag(
+            @Parameter(description = "Tag ID", required = true)
+            @PathVariable("id") UUID tagId,
+            @Valid @RequestBody TagRequest request,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID userId = getCurrentUserId();
+            String clientIp = getClientIpAddress(httpRequest);
+            
+            logger.debug("Updating tag {} for user: {} from IP: {}", tagId, userId, clientIp);
+            
+            TagResponse response = vaultService.updateTag(userId, tagId, request);
+            
+            logger.info("Updated tag '{}' ({}) for user: {} from IP: {}", 
+                       response.getName(), tagId, userId, clientIp);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid tag update request for {}: {}", tagId, e.getMessage());
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "invalid_request");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            
+        } catch (Exception e) {
+            logger.error("Error updating tag {}: {}", tagId, e.getMessage(), e);
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "update_failed");
+            errorResponse.put("message", "Failed to update tag");
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * Soft deletes a tag.
+     * 
+     * @param tagId The ID of the tag to delete
+     * @param httpRequest HTTP request for logging purposes
+     * @return Success message with deletion timestamp
+     */
+    @DeleteMapping("/tag/{id}")
+    @Operation(
+        summary = "Delete a tag (move to trash)",
+        description = "Soft deletes a tag by moving it to trash. " +
+                     "The tag is removed from all vault entries and can be restored within 30 days."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Tag moved to trash successfully",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Tag not found",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - invalid or expired token",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        )
+    })
+    public ResponseEntity<?> deleteTag(
+            @Parameter(description = "Tag ID", required = true)
+            @PathVariable("id") UUID tagId,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID userId = getCurrentUserId();
+            String clientIp = getClientIpAddress(httpRequest);
+            
+            logger.debug("Deleting tag {} for user: {} from IP: {}", tagId, userId, clientIp);
+            
+            vaultService.deleteTag(userId, tagId);
+            
+            logger.info("Deleted tag {} for user: {} from IP: {}", tagId, userId, clientIp);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Tag moved to trash successfully");
+            response.put("tagId", tagId);
+            response.put("deletedAt", LocalDateTime.now());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (IllegalArgumentException e) {
+            logger.warn("Tag not found for deletion {}: {}", tagId, e.getMessage());
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "not_found");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+            
+        } catch (Exception e) {
+            logger.error("Error deleting tag {}: {}", tagId, e.getMessage(), e);
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "deletion_failed");
+            errorResponse.put("message", "Failed to delete tag");
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * Retrieves all tags for the authenticated user.
+     * 
+     * @param httpRequest HTTP request for logging purposes
+     * @return List of tags
+     */
+    @GetMapping("/tags")
+    @Operation(
+        summary = "Retrieve all tags",
+        description = "Gets all active tags for the authenticated user."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Tags retrieved successfully",
+            content = @Content(
+                mediaType = "application/json",
+                array = @ArraySchema(schema = @Schema(implementation = TagResponse.class))
+            )
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - invalid or expired token",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        )
+    })
+    public ResponseEntity<?> getAllTags(HttpServletRequest httpRequest) {
+        try {
+            UUID userId = getCurrentUserId();
+            String clientIp = getClientIpAddress(httpRequest);
+            
+            logger.debug("Retrieving all tags for user: {} from IP: {}", userId, clientIp);
+            
+            List<TagResponse> tags = vaultService.getAllTags(userId);
+            
+            logger.info("Retrieved {} tags for user: {} from IP: {}", 
+                       tags.size(), userId, clientIp);
+            
+            return ResponseEntity.ok(tags);
+            
+        } catch (Exception e) {
+            logger.error("Error retrieving tags: {}", e.getMessage(), e);
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "retrieval_failed");
+            errorResponse.put("message", "Failed to retrieve tags");
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * Filters credentials by a specific tag.
+     * 
+     * @param tagId The ID of the tag to filter by
+     * @param httpRequest HTTP request for logging purposes
+     * @return List of credentials with the specified tag
+     */
+    @GetMapping("/credentials/tag/{tagId}")
+    @Operation(
+        summary = "Filter credentials by tag",
+        description = "Gets all credentials that have the specified tag assigned."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Filtered credentials retrieved successfully",
+            content = @Content(
+                mediaType = "application/json",
+                array = @ArraySchema(schema = @Schema(implementation = CredentialResponse.class))
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Tag not found",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - invalid or expired token",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        )
+    })
+    public ResponseEntity<?> getCredentialsByTag(
+            @Parameter(description = "Tag ID", required = true)
+            @PathVariable UUID tagId,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID userId = getCurrentUserId();
+            String clientIp = getClientIpAddress(httpRequest);
+            
+            logger.debug("Filtering credentials by tag {} for user: {} from IP: {}", tagId, userId, clientIp);
+            
+            List<CredentialResponse> credentials = vaultService.getCredentialsByTag(userId, tagId);
+            
+            logger.info("Retrieved {} credentials with tag {} for user: {} from IP: {}", 
+                       credentials.size(), tagId, userId, clientIp);
+            
+            return ResponseEntity.ok(credentials);
+            
+        } catch (IllegalArgumentException e) {
+            logger.warn("Tag not found for filtering {}: {}", tagId, e.getMessage());
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "not_found");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+            
+        } catch (Exception e) {
+            logger.error("Error filtering credentials by tag {}: {}", tagId, e.getMessage(), e);
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "retrieval_failed");
+            errorResponse.put("message", "Failed to filter credentials by tag");
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 }

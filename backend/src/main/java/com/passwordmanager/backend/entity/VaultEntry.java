@@ -280,4 +280,24 @@ public class VaultEntry {
     public UUID getFolderId() {
         return folder != null ? folder.getId() : null;
     }
+
+    /**
+     * Checks if this entry has a specific tag.
+     * 
+     * This is a simplified implementation that checks if the tag ID
+     * appears in the encrypted data. In a production system, you would
+     * want to store tag associations in a separate join table.
+     * 
+     * @param tagId the tag ID to check
+     * @return true if the entry has the tag, false otherwise
+     */
+    public boolean hasTag(UUID tagId) {
+        if (encryptedData == null || tagId == null) {
+            return false;
+        }
+        
+        // This is a simplified check - in production, use a proper join table
+        String tagIdString = tagId.toString();
+        return encryptedData.contains(tagIdString);
+    }
 }

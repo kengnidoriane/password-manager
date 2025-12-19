@@ -1,5 +1,8 @@
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\entity\Tag.java
+C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\service\VaultService.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\dto\RegisterResponse.java
+C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\controller\VaultController.java
+C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\dto\CredentialRequest.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\entity\Folder.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\entity\VaultEntry.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\util\JwtUtil.java
@@ -7,14 +10,17 @@ C:\Users\doriane\Documents\password managment\backend\src\main\java\com\password
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\config\SecurityConfig.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\dto\LoginRequest.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\service\CustomUserDetailsService.java
+C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\dto\TagRequest.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\repository\VaultRepository.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\config\CorsConfig.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\repository\UserRepository.java
+C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\dto\FolderRequest.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\repository\BackupCodeRepository.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\config\SessionProperties.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\entity\SecureNote.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\config\SecurityProperties.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\entity\UserAccount.java
+C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\dto\TagResponse.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\entity\BackupCode.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\service\AuditLogService.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\service\RateLimitingService.java
@@ -28,8 +34,10 @@ C:\Users\doriane\Documents\password managment\backend\src\main\java\com\password
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\repository\SessionRepository.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\service\AuthenticationService.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\controller\AuthController.java
+C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\dto\FolderResponse.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\repository\TagRepository.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\entity\Session.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\dto\LoginResponse.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\config\JwtProperties.java
+C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\dto\CredentialResponse.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\repository\FolderRepository.java
