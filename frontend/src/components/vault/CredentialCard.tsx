@@ -10,6 +10,7 @@
 import { useState, useCallback } from 'react';
 import { Credential, Folder, Tag } from '@/lib/db';
 import { useVault } from '@/hooks/useVault';
+import { useClipboard } from '@/hooks/useClipboard';
 
 interface CredentialCardProps {
   credential: Credential;
@@ -28,7 +29,7 @@ export function CredentialCard({
   folders,
   tags
 }: CredentialCardProps) {
-  const { updateLastUsed } = useVault();
+  const { copyToClipboard } = useClipboard();
   const [showPassword, setShowPassword] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -56,46 +57,39 @@ export function CredentialCard({
     return new Date(timestamp).toLocaleDateString();
   };
 
-  // Copy to clipboard with auto-clear
-  const copyToClipboard = useCallback(async (text: string, fieldType: string) => {
+  // Copy to clipboard with auto-clear using clipboard service
+  const handleCopyToClipboard = useCallback(async (
+    text: string, 
+    fieldType: 'username' | 'password' | 'url' | 'notes'
+  ) => {
     try {
-      await navigator.clipboard.writeText(text);
+      await copyToClipboard(text, fieldType, credential.id);
       setCopiedField(fieldType);
-      
-      // Update last used timestamp
-      await updateLastUsed(credential.id);
       
       // Clear copied state after 2 seconds
       setTimeout(() => setCopiedField(null), 2000);
-      
-      // Auto-clear clipboard after 60 seconds (configurable)
-      setTimeout(() => {
-        navigator.clipboard.writeText('').catch(() => {
-          // Ignore errors - clipboard might be overwritten by user
-        });
-      }, 60000);
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
     }
-  }, [credential.id, updateLastUsed]);
+  }, [copyToClipboard, credential.id]);
 
   const handleUsernameClick = () => {
-    copyToClipboard(credential.username, 'username');
+    handleCopyToClipboard(credential.username, 'username');
   };
 
   const handlePasswordClick = () => {
-    copyToClipboard(credential.password, 'password');
+    handleCopyToClipboard(credential.password, 'password');
   };
 
   const handleUrlClick = () => {
     if (credential.url) {
-      copyToClipboard(credential.url, 'url');
+      handleCopyToClipboard(credential.url, 'url');
     }
   };
 
   const handleNotesClick = () => {
     if (credential.notes) {
-      copyToClipboard(credential.notes, 'notes');
+      handleCopyToClipboard(credential.notes, 'notes');
     }
   };
 

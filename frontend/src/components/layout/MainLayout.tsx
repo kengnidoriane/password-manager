@@ -6,6 +6,7 @@ import { useUIStore } from '@/stores/uiStore';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { NotificationContainer } from '../ui/NotificationContainer';
+import { ClipboardStatus } from '../ui/ClipboardStatus';
 
 /**
  * Main Layout Component
@@ -50,6 +51,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       </div>
 
       <NotificationContainer />
+      <ClipboardStatus />
     </div>
   );
 }
