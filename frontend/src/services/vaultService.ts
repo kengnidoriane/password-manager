@@ -870,7 +870,7 @@ export class VaultService {
   // ===== SEARCH OPERATIONS =====
 
   /**
-   * Search credentials by query
+   * Search credentials by query (legacy method - kept for compatibility)
    */
   async searchCredentials(query: string): Promise<Credential[]> {
     if (!query.trim()) {
@@ -899,7 +899,7 @@ export class VaultService {
   }
 
   /**
-   * Search secure notes by query
+   * Search secure notes by query (legacy method - kept for compatibility)
    */
   async searchSecureNotes(query: string): Promise<SecureNote[]> {
     if (!query.trim()) {

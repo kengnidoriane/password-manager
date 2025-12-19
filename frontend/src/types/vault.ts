@@ -15,6 +15,9 @@ export type {
   AppSettings
 } from '@/lib/db';
 
+// Import types for use in this file
+import type { Credential, Folder, Tag, SecureNote } from '@/lib/db';
+
 /**
  * Form data types for creating new items (without generated fields)
  */

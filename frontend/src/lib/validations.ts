@@ -28,18 +28,19 @@ export const passwordSchema = z
 // URL validation
 export const urlSchema = z
   .string()
-  .url('Must be a valid URL')
-  .or(z.literal(''));
+  .refine((val) => val === '' || z.string().url().safeParse(val).success, {
+    message: 'Must be a valid URL or empty'
+  });
 
 // Credential validation schema
 export const credentialSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   username: z.string().min(1, 'Username is required'),
   password: z.string().min(1, 'Password is required'),
-  url: urlSchema.optional(),
-  notes: z.string().optional(),
+  url: urlSchema.default(''),
+  notes: z.string().default(''),
   folderId: z.string().optional(),
-  tags: z.array(z.string()).optional()
+  tags: z.array(z.string()).default([])
 });
 
 export type CredentialFormData = z.infer<typeof credentialSchema>;
