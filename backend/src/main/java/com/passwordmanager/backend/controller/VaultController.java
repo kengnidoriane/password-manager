@@ -4,6 +4,8 @@ import com.passwordmanager.backend.dto.CredentialRequest;
 import com.passwordmanager.backend.dto.CredentialResponse;
 import com.passwordmanager.backend.dto.FolderRequest;
 import com.passwordmanager.backend.dto.FolderResponse;
+import com.passwordmanager.backend.dto.SecureNoteRequest;
+import com.passwordmanager.backend.dto.SecureNoteResponse;
 import com.passwordmanager.backend.dto.TagRequest;
 import com.passwordmanager.backend.dto.TagResponse;
 import com.passwordmanager.backend.service.VaultService;
@@ -386,6 +388,391 @@ public class VaultController {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("error", "deletion_failed");
             errorResponse.put("message", "Failed to delete credential");
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    // ========== Secure Notes Management Endpoints ==========
+
+    /**
+     * Creates a new secure note.
+     * 
+     * @param request The secure note creation request
+     * @param httpRequest HTTP request for logging purposes
+     * @return The created secure note with metadata
+     */
+    @PostMapping("/note")
+    @Operation(
+        summary = "Create a new secure note",
+        description = "Creates a new encrypted secure note with optional file attachments. " +
+                     "The note content must be encrypted client-side using AES-256-GCM."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "201",
+            description = "Secure note created successfully",
+            content = @Content(schema = @Schema(implementation = SecureNoteResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid request data or attachment size exceeded",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - invalid or expired token",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        )
+    })
+    public ResponseEntity<?> createSecureNote(
+            @Valid @RequestBody SecureNoteRequest request,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID userId = getCurrentUserId();
+            String clientIp = getClientIpAddress(httpRequest);
+            
+            logger.debug("Creating secure note '{}' for user: {} from IP: {}", request.getTitle(), userId, clientIp);
+            
+            SecureNoteResponse response = vaultService.createSecureNote(userId, request);
+            
+            logger.info("Created secure note '{}' ({}) for user: {} from IP: {}", 
+                       response.getTitle(), response.getId(), userId, clientIp);
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid secure note creation request: {}", e.getMessage());
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "invalid_request");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            
+        } catch (Exception e) {
+            logger.error("Error creating secure note: {}", e.getMessage(), e);
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "creation_failed");
+            errorResponse.put("message", "Failed to create secure note");
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * Updates an existing secure note with version control.
+     * 
+     * @param noteId The ID of the secure note to update
+     * @param request The updated secure note data
+     * @param httpRequest HTTP request for logging purposes
+     * @return The updated secure note with new version number
+     */
+    @PutMapping("/note/{id}")
+    @Operation(
+        summary = "Update an existing secure note",
+        description = "Updates an encrypted secure note with version control to prevent conflicts. " +
+                     "The version number must match the current note version."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Secure note updated successfully",
+            content = @Content(schema = @Schema(implementation = SecureNoteResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid request data or attachment size exceeded",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Secure note not found",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "409",
+            description = "Version conflict - note was modified by another process",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - invalid or expired token",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        )
+    })
+    public ResponseEntity<?> updateSecureNote(
+            @Parameter(description = "Secure note ID", required = true)
+            @PathVariable("id") UUID noteId,
+            @Valid @RequestBody SecureNoteRequest request,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID userId = getCurrentUserId();
+            String clientIp = getClientIpAddress(httpRequest);
+            
+            logger.debug("Updating secure note {} for user: {} from IP: {}", 
+                        noteId, userId, clientIp);
+            
+            SecureNoteResponse response = vaultService.updateSecureNote(userId, noteId, request);
+            
+            logger.info("Updated secure note '{}' ({}) for user: {} from IP: {} (version {})", 
+                       response.getTitle(), noteId, userId, clientIp, response.getVersion());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid secure note update request for {}: {}", noteId, e.getMessage());
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "invalid_request");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            
+        } catch (OptimisticLockingFailureException e) {
+            logger.warn("Version conflict updating secure note {}: {}", noteId, e.getMessage());
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "version_conflict");
+            errorResponse.put("message", "Secure note was modified by another process. Please refresh and try again.");
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+            
+        } catch (Exception e) {
+            logger.error("Error updating secure note {}: {}", noteId, e.getMessage(), e);
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "update_failed");
+            errorResponse.put("message", "Failed to update secure note");
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * Soft deletes a secure note (moves to trash).
+     * 
+     * @param noteId The ID of the secure note to delete
+     * @param httpRequest HTTP request for logging purposes
+     * @return Success message with deletion timestamp
+     */
+    @DeleteMapping("/note/{id}")
+    @Operation(
+        summary = "Delete a secure note (move to trash)",
+        description = "Soft deletes a secure note by moving it to trash. " +
+                     "The note can be restored within 30 days before permanent deletion."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Secure note moved to trash successfully",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Secure note not found",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - invalid or expired token",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        )
+    })
+    public ResponseEntity<?> deleteSecureNote(
+            @Parameter(description = "Secure note ID", required = true)
+            @PathVariable("id") UUID noteId,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID userId = getCurrentUserId();
+            String clientIp = getClientIpAddress(httpRequest);
+            
+            logger.debug("Deleting secure note {} for user: {} from IP: {}", 
+                        noteId, userId, clientIp);
+            
+            vaultService.deleteSecureNote(userId, noteId);
+            
+            logger.info("Deleted secure note {} for user: {} from IP: {}", 
+                       noteId, userId, clientIp);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Secure note moved to trash successfully");
+            response.put("noteId", noteId);
+            response.put("deletedAt", LocalDateTime.now());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (IllegalArgumentException e) {
+            logger.warn("Secure note not found for deletion {}: {}", noteId, e.getMessage());
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "not_found");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+            
+        } catch (Exception e) {
+            logger.error("Error deleting secure note {}: {}", noteId, e.getMessage(), e);
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "deletion_failed");
+            errorResponse.put("message", "Failed to delete secure note");
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * Retrieves all active secure notes for the authenticated user.
+     * 
+     * @param httpRequest HTTP request for logging purposes
+     * @return List of secure note responses
+     */
+    @GetMapping("/notes")
+    @Operation(
+        summary = "Retrieve all secure notes",
+        description = "Gets all active (non-deleted) secure notes for the authenticated user. " +
+                     "Returns encrypted data that can only be decrypted client-side with the master key."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Secure notes retrieved successfully",
+            content = @Content(
+                mediaType = "application/json",
+                array = @ArraySchema(schema = @Schema(implementation = SecureNoteResponse.class))
+            )
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - invalid or expired token",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        )
+    })
+    public ResponseEntity<?> getAllSecureNotes(HttpServletRequest httpRequest) {
+        try {
+            UUID userId = getCurrentUserId();
+            String clientIp = getClientIpAddress(httpRequest);
+            
+            logger.debug("Retrieving all secure notes for user: {} from IP: {}", userId, clientIp);
+            
+            List<SecureNoteResponse> notes = vaultService.getAllSecureNotes(userId);
+            
+            logger.info("Retrieved {} secure notes for user: {} from IP: {}", 
+                       notes.size(), userId, clientIp);
+            
+            return ResponseEntity.ok(notes);
+            
+        } catch (Exception e) {
+            logger.error("Error retrieving secure notes: {}", e.getMessage(), e);
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "retrieval_failed");
+            errorResponse.put("message", "Failed to retrieve secure notes");
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * Retrieves a specific secure note and updates its last accessed timestamp.
+     * 
+     * @param noteId The ID of the secure note to retrieve
+     * @param httpRequest HTTP request for logging purposes
+     * @return The secure note response
+     */
+    @GetMapping("/note/{id}")
+    @Operation(
+        summary = "Retrieve a specific secure note",
+        description = "Gets a specific secure note and updates its last accessed timestamp. " +
+                     "Returns encrypted data that can only be decrypted client-side with the master key."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Secure note retrieved successfully",
+            content = @Content(schema = @Schema(implementation = SecureNoteResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Secure note not found",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - invalid or expired token",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        )
+    })
+    public ResponseEntity<?> getSecureNote(
+            @Parameter(description = "Secure note ID", required = true)
+            @PathVariable("id") UUID noteId,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID userId = getCurrentUserId();
+            String clientIp = getClientIpAddress(httpRequest);
+            
+            logger.debug("Retrieving secure note {} for user: {} from IP: {}", 
+                        noteId, userId, clientIp);
+            
+            SecureNoteResponse response = vaultService.getSecureNote(userId, noteId);
+            
+            logger.info("Retrieved secure note '{}' ({}) for user: {} from IP: {}", 
+                       response.getTitle(), noteId, userId, clientIp);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (IllegalArgumentException e) {
+            logger.warn("Secure note not found {}: {}", noteId, e.getMessage());
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "not_found");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+            
+        } catch (Exception e) {
+            logger.error("Error retrieving secure note {}: {}", noteId, e.getMessage(), e);
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "retrieval_failed");
+            errorResponse.put("message", "Failed to retrieve secure note");
             errorResponse.put("timestamp", LocalDateTime.now());
             
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);

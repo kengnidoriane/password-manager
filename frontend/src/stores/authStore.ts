@@ -20,9 +20,18 @@ export interface Session {
   lastActivity: number;
 }
 
+export interface DerivedKeys {
+  encryptionKey: CryptoKey;
+  authKey: CryptoKey;
+  salt: Uint8Array;
+}
+
 interface AuthState {
   user: User | null;
   session: Session | null;
+  encryptionKey: CryptoKey | null;
+  authKey: CryptoKey | null;
+  salt: Uint8Array | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   sessionTimeoutId: NodeJS.Timeout | null;
@@ -30,6 +39,7 @@ interface AuthState {
   // Actions
   setUser: (user: User | null) => void;
   setSession: (session: Session | null) => void;
+  setEncryptionKeys: (keys: DerivedKeys | null) => void;
   setLoading: (loading: boolean) => void;
   lockSession: () => void;
   unlockSession: (masterPassword?: string) => Promise<boolean>;
@@ -39,7 +49,7 @@ interface AuthState {
   checkSessionExpiry: () => boolean;
   startSessionTimer: () => void;
   clearSessionTimer: () => void;
-  initializeSession: (token: string, expiresAt: number, userId: string) => void;
+  initializeSession: (token: string, expiresAt: number, userId: string, keys?: DerivedKeys) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -47,6 +57,9 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       user: null,
       session: null,
+      encryptionKey: null,
+      authKey: null,
+      salt: null,
       isAuthenticated: false,
       isLoading: false,
       sessionTimeoutId: null,
@@ -69,6 +82,22 @@ export const useAuthStore = create<AuthState>()(
           get().startSessionTimer();
         } else {
           get().clearSessionTimer();
+        }
+      },
+
+      setEncryptionKeys: (keys) => {
+        if (keys) {
+          set({
+            encryptionKey: keys.encryptionKey,
+            authKey: keys.authKey,
+            salt: keys.salt
+          });
+        } else {
+          set({
+            encryptionKey: null,
+            authKey: null,
+            salt: null
+          });
         }
       },
 
@@ -130,10 +159,13 @@ export const useAuthStore = create<AuthState>()(
           }
         }
         
-        // Clear local state
+        // Clear local state including encryption keys
         set({
           user: null,
           session: null,
+          encryptionKey: null,
+          authKey: null,
+          salt: null,
           isAuthenticated: false,
           sessionTimeoutId: null
         });
@@ -245,7 +277,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      initializeSession: (token: string, expiresAt: number, userId: string) => {
+      initializeSession: (token: string, expiresAt: number, userId: string, keys?: DerivedKeys) => {
         const session: Session = {
           token,
           expiresAt,
@@ -254,6 +286,11 @@ export const useAuthStore = create<AuthState>()(
         };
         
         get().setSession(session);
+        
+        // Set encryption keys if provided
+        if (keys) {
+          get().setEncryptionKeys(keys);
+        }
       }
     }),
     {
@@ -262,6 +299,8 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         session: state.session,
         isAuthenticated: state.isAuthenticated
+        // Note: We don't persist encryption keys for security reasons
+        // They must be re-derived from master password on each session
       })
     }
   )

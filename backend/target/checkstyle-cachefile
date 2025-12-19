@@ -1,4 +1,4 @@
-#Fri Dec 19 09:06:36 WEST 2025
+#Fri Dec 19 10:01:48 WEST 2025
 C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\config\\CorsConfig.java=1764937413665
 C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\config\\JwtProperties.java=1764937961373
 C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\config\\OpenApiConfig.java=1764937428962
@@ -14,6 +14,7 @@ C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\c
 C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\dto\\LoginResponse.java=1766073527302
 C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\dto\\RegisterRequest.java=1766073527305
 C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\dto\\RegisterResponse.java=1766073527306
+C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\dto\\SecureNoteResponse.java=1766133008742
 C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\dto\\TagRequest.java=1766077458908
 C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\dto\\TagResponse.java=1766077471018
 C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\entity\\BackupCode.java=1766073527308

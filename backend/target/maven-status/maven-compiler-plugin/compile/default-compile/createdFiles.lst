@@ -1,4 +1,5 @@
 com\passwordmanager\backend\dto\TagResponse.class
+com\passwordmanager\backend\dto\SecureNoteRequest$SecureNoteRequestBuilder.class
 com\passwordmanager\backend\controller\VaultController.class
 com\passwordmanager\backend\dto\TagRequest$TagRequestBuilder.class
 com\passwordmanager\backend\entity\VaultEntry$VaultEntryBuilder.class
@@ -21,6 +22,7 @@ com\passwordmanager\backend\service\AuthenticationService.class
 com\passwordmanager\backend\repository\SessionRepository.class
 com\passwordmanager\backend\dto\LoginRequest.class
 com\passwordmanager\backend\entity\Tag$TagBuilder.class
+com\passwordmanager\backend\dto\SecureNoteRequest.class
 com\passwordmanager\backend\dto\CredentialResponse.class
 com\passwordmanager\backend\entity\SecureNote$SecureNoteBuilder.class
 com\passwordmanager\backend\dto\RegisterResponse.class
@@ -32,6 +34,7 @@ com\passwordmanager\backend\entity\BackupCode.class
 com\passwordmanager\backend\dto\RegisterResponse$RegisterResponseBuilder.class
 com\passwordmanager\backend\dto\FolderResponse$FolderResponseBuilder.class
 com\passwordmanager\backend\config\SecurityProperties$RateLimit.class
+com\passwordmanager\backend\dto\SecureNoteResponse$SecureNoteResponseBuilder.class
 com\passwordmanager\backend\dto\TagRequest.class
 com\passwordmanager\backend\entity\Session.class
 com\passwordmanager\backend\service\AuditLogService.class
@@ -52,6 +55,7 @@ com\passwordmanager\backend\config\SecurityProperties$FailedAuth.class
 com\passwordmanager\backend\entity\Folder$FolderBuilder.class
 com\passwordmanager\backend\repository\VaultRepository.class
 com\passwordmanager\backend\controller\AuthController.class
+com\passwordmanager\backend\dto\SecureNoteResponse.class
 com\passwordmanager\backend\repository\FolderRepository.class
 com\passwordmanager\backend\dto\RegisterRequest$RegisterRequestBuilder.class
 com\passwordmanager\backend\repository\TagRepository.class

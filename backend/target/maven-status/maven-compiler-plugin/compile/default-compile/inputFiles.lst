@@ -25,6 +25,7 @@ C:\Users\doriane\Documents\password managment\backend\src\main\java\com\password
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\service\AuditLogService.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\service\RateLimitingService.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\controller\HealthController.java
+C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\dto\SecureNoteRequest.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\config\OpenApiConfig.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\filter\JwtAuthenticationFilter.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\config\RedisConfig.java
@@ -33,6 +34,7 @@ C:\Users\doriane\Documents\password managment\backend\src\main\java\com\password
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\dto\RegisterRequest.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\repository\SessionRepository.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\service\AuthenticationService.java
+C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\dto\SecureNoteResponse.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\controller\AuthController.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\dto\FolderResponse.java
 C:\Users\doriane\Documents\password managment\backend\src\main\java\com\passwordmanager\backend\repository\TagRepository.java

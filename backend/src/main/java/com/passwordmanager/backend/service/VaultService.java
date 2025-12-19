@@ -4,13 +4,17 @@ import com.passwordmanager.backend.dto.CredentialRequest;
 import com.passwordmanager.backend.dto.CredentialResponse;
 import com.passwordmanager.backend.dto.FolderRequest;
 import com.passwordmanager.backend.dto.FolderResponse;
+import com.passwordmanager.backend.dto.SecureNoteRequest;
+import com.passwordmanager.backend.dto.SecureNoteResponse;
 import com.passwordmanager.backend.dto.TagRequest;
 import com.passwordmanager.backend.dto.TagResponse;
 import com.passwordmanager.backend.entity.Folder;
+import com.passwordmanager.backend.entity.SecureNote;
 import com.passwordmanager.backend.entity.Tag;
 import com.passwordmanager.backend.entity.UserAccount;
 import com.passwordmanager.backend.entity.VaultEntry;
 import com.passwordmanager.backend.repository.FolderRepository;
+import com.passwordmanager.backend.repository.SecureNoteRepository;
 import com.passwordmanager.backend.repository.TagRepository;
 import com.passwordmanager.backend.repository.UserRepository;
 import com.passwordmanager.backend.repository.VaultRepository;
@@ -49,15 +53,18 @@ public class VaultService {
     private final UserRepository userRepository;
     private final FolderRepository folderRepository;
     private final TagRepository tagRepository;
+    private final SecureNoteRepository secureNoteRepository;
 
     public VaultService(VaultRepository vaultRepository,
                        UserRepository userRepository,
                        FolderRepository folderRepository,
-                       TagRepository tagRepository) {
+                       TagRepository tagRepository,
+                       SecureNoteRepository secureNoteRepository) {
         this.vaultRepository = vaultRepository;
         this.userRepository = userRepository;
         this.folderRepository = folderRepository;
         this.tagRepository = tagRepository;
+        this.secureNoteRepository = secureNoteRepository;
     }
 
     /**
@@ -684,6 +691,311 @@ public class VaultService {
         return responses;
     }
 
+    // ========== Secure Notes Management ==========
+
+    /**
+     * Retrieves all active secure notes for a user.
+     * 
+     * @param userId the user ID
+     * @return list of secure note responses
+     * @throws IllegalArgumentException if user not found
+     */
+    @Transactional(readOnly = true)
+    public List<SecureNoteResponse> getAllSecureNotes(UUID userId) {
+        logger.debug("Retrieving all secure notes for user: {}", userId);
+
+        // Verify user exists
+        if (!userRepository.existsById(userId)) {
+            throw new IllegalArgumentException("User not found: " + userId);
+        }
+
+        List<SecureNote> notes = secureNoteRepository.findActiveByUserId(userId);
+        
+        List<SecureNoteResponse> responses = notes.stream()
+                .map(SecureNoteResponse::fromEntity)
+                .collect(Collectors.toList());
+
+        logger.debug("Retrieved {} secure notes for user: {}", responses.size(), userId);
+        
+        return responses;
+    }
+
+    /**
+     * Creates a new secure note.
+     * 
+     * @param userId the user ID
+     * @param request the secure note request
+     * @return the created secure note response
+     * @throws IllegalArgumentException if validation fails
+     */
+    public SecureNoteResponse createSecureNote(UUID userId, SecureNoteRequest request) {
+        logger.debug("Creating secure note for user: {}", userId);
+
+        // Validate request
+        validateSecureNoteRequest(request, false);
+
+        // Get user
+        UserAccount user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+
+        // Get folder if specified
+        Folder folder = null;
+        if (request.getFolderId() != null) {
+            folder = folderRepository.findActiveByIdAndUserId(request.getFolderId(), userId)
+                    .orElseThrow(() -> new IllegalArgumentException("Folder not found: " + request.getFolderId()));
+        }
+
+        // Validate attachment size limit
+        if (request.hasAttachments() && !request.isAttachmentSizeValid(SecureNote.MAX_ATTACHMENT_SIZE)) {
+            throw new IllegalArgumentException("Attachment size exceeds maximum allowed: " + SecureNote.MAX_ATTACHMENT_SIZE + " bytes");
+        }
+
+        // Create secure note
+        SecureNote note = SecureNote.builder()
+                .user(user)
+                .title(request.getTitle().trim())
+                .encryptedContent(request.getEncryptedContent())
+                .contentIv(request.getContentIv())
+                .contentAuthTag(request.getContentAuthTag())
+                .encryptedAttachments(request.getEncryptedAttachments())
+                .attachmentsIv(request.getAttachmentsIv())
+                .attachmentsAuthTag(request.getAttachmentsAuthTag())
+                .attachmentsSize(request.getAttachmentsSizeOrZero())
+                .attachmentCount(request.getAttachmentCountOrZero())
+                .folder(folder)
+                .build();
+
+        SecureNote savedNote = secureNoteRepository.save(note);
+
+        logger.info("Created secure note {} for user: {}", savedNote.getId(), userId);
+
+        return SecureNoteResponse.fromEntity(savedNote);
+    }
+
+    /**
+     * Updates an existing secure note with version control.
+     * 
+     * @param userId the user ID
+     * @param noteId the note ID
+     * @param request the updated secure note data
+     * @return the updated secure note response
+     * @throws IllegalArgumentException if note not found or validation fails
+     * @throws OptimisticLockingFailureException if version conflict occurs
+     */
+    public SecureNoteResponse updateSecureNote(UUID userId, UUID noteId, SecureNoteRequest request) {
+        logger.debug("Updating secure note {} for user: {}", noteId, userId);
+
+        // Validate request
+        validateSecureNoteRequest(request, true);
+
+        // Get existing note
+        SecureNote existingNote = secureNoteRepository.findActiveByIdAndUserId(noteId, userId)
+                .orElseThrow(() -> new IllegalArgumentException("Secure note not found: " + noteId));
+
+        // Check version for optimistic locking
+        if (!existingNote.getVersion().equals(request.getVersion())) {
+            throw new OptimisticLockingFailureException("Secure note was modified by another process. Expected version: " 
+                    + existingNote.getVersion() + ", provided: " + request.getVersion());
+        }
+
+        // Get folder if specified
+        Folder folder = null;
+        if (request.getFolderId() != null) {
+            folder = folderRepository.findActiveByIdAndUserId(request.getFolderId(), userId)
+                    .orElseThrow(() -> new IllegalArgumentException("Folder not found: " + request.getFolderId()));
+        }
+
+        // Validate attachment size limit
+        if (request.hasAttachments() && !request.isAttachmentSizeValid(SecureNote.MAX_ATTACHMENT_SIZE)) {
+            throw new IllegalArgumentException("Attachment size exceeds maximum allowed: " + SecureNote.MAX_ATTACHMENT_SIZE + " bytes");
+        }
+
+        // Update note fields
+        existingNote.setTitle(request.getTitle().trim());
+        existingNote.setEncryptedContent(request.getEncryptedContent());
+        existingNote.setContentIv(request.getContentIv());
+        existingNote.setContentAuthTag(request.getContentAuthTag());
+        existingNote.setEncryptedAttachments(request.getEncryptedAttachments());
+        existingNote.setAttachmentsIv(request.getAttachmentsIv());
+        existingNote.setAttachmentsAuthTag(request.getAttachmentsAuthTag());
+        existingNote.setAttachmentsSize(request.getAttachmentsSizeOrZero());
+        existingNote.setAttachmentCount(request.getAttachmentCountOrZero());
+        existingNote.setFolder(folder);
+
+        try {
+            SecureNote savedNote = secureNoteRepository.save(existingNote);
+            
+            logger.info("Updated secure note {} for user: {} (version {})", 
+                       noteId, userId, savedNote.getVersion());
+            
+            return SecureNoteResponse.fromEntity(savedNote);
+            
+        } catch (OptimisticLockException e) {
+            throw new OptimisticLockingFailureException("Secure note was modified by another process", e);
+        }
+    }
+
+    /**
+     * Soft deletes a secure note (moves to trash).
+     * 
+     * @param userId the user ID
+     * @param noteId the note ID
+     * @throws IllegalArgumentException if note not found
+     */
+    public void deleteSecureNote(UUID userId, UUID noteId) {
+        logger.debug("Deleting secure note {} for user: {}", noteId, userId);
+
+        SecureNote note = secureNoteRepository.findActiveByIdAndUserId(noteId, userId)
+                .orElseThrow(() -> new IllegalArgumentException("Secure note not found: " + noteId));
+
+        note.softDelete();
+        secureNoteRepository.save(note);
+
+        logger.info("Deleted secure note {} for user: {}", noteId, userId);
+    }
+
+    /**
+     * Retrieves a specific secure note and updates its last accessed timestamp.
+     * 
+     * @param userId the user ID
+     * @param noteId the note ID
+     * @return the secure note response
+     * @throws IllegalArgumentException if note not found
+     */
+    @Transactional
+    public SecureNoteResponse getSecureNote(UUID userId, UUID noteId) {
+        logger.debug("Retrieving secure note {} for user: {}", noteId, userId);
+
+        SecureNote note = secureNoteRepository.findActiveByIdAndUserId(noteId, userId)
+                .orElseThrow(() -> new IllegalArgumentException("Secure note not found: " + noteId));
+
+        // Update last accessed timestamp
+        note.updateLastAccessed();
+        secureNoteRepository.save(note);
+
+        logger.debug("Retrieved secure note {} for user: {}", noteId, userId);
+
+        return SecureNoteResponse.fromEntity(note);
+    }
+
+    /**
+     * Restores a secure note from trash.
+     * 
+     * @param userId the user ID
+     * @param noteId the note ID
+     * @return the restored secure note response
+     * @throws IllegalArgumentException if note not found in trash
+     */
+    public SecureNoteResponse restoreSecureNote(UUID userId, UUID noteId) {
+        logger.debug("Restoring secure note {} for user: {}", noteId, userId);
+
+        SecureNote note = secureNoteRepository.findByIdAndUserId(noteId, userId)
+                .orElseThrow(() -> new IllegalArgumentException("Secure note not found: " + noteId));
+
+        if (!note.isDeleted()) {
+            throw new IllegalArgumentException("Secure note is not in trash: " + noteId);
+        }
+
+        note.restore();
+        SecureNote savedNote = secureNoteRepository.save(note);
+
+        logger.info("Restored secure note {} for user: {}", noteId, userId);
+
+        return SecureNoteResponse.fromEntity(savedNote);
+    }
+
+    /**
+     * Retrieves all deleted secure notes for a user.
+     * 
+     * @param userId the user ID
+     * @return list of deleted secure note responses
+     * @throws IllegalArgumentException if user not found
+     */
+    @Transactional(readOnly = true)
+    public List<SecureNoteResponse> getDeletedSecureNotes(UUID userId) {
+        logger.debug("Retrieving deleted secure notes for user: {}", userId);
+
+        // Verify user exists
+        if (!userRepository.existsById(userId)) {
+            throw new IllegalArgumentException("User not found: " + userId);
+        }
+
+        List<SecureNote> notes = secureNoteRepository.findDeletedByUserId(userId);
+        
+        List<SecureNoteResponse> responses = notes.stream()
+                .map(SecureNoteResponse::fromEntity)
+                .collect(Collectors.toList());
+
+        logger.debug("Retrieved {} deleted secure notes for user: {}", responses.size(), userId);
+        
+        return responses;
+    }
+
+    /**
+     * Searches secure notes by title.
+     * 
+     * @param userId the user ID
+     * @param query the search query
+     * @return list of matching secure note responses
+     * @throws IllegalArgumentException if user not found
+     */
+    @Transactional(readOnly = true)
+    public List<SecureNoteResponse> searchSecureNotes(UUID userId, String query) {
+        logger.debug("Searching secure notes for user: {} with query: '{}'", userId, query);
+
+        // Verify user exists
+        if (!userRepository.existsById(userId)) {
+            throw new IllegalArgumentException("User not found: " + userId);
+        }
+
+        if (query == null || query.trim().isEmpty()) {
+            return getAllSecureNotes(userId);
+        }
+
+        List<SecureNote> notes = secureNoteRepository.searchByTitle(query.trim(), userId);
+        
+        List<SecureNoteResponse> responses = notes.stream()
+                .map(SecureNoteResponse::fromEntity)
+                .collect(Collectors.toList());
+
+        logger.debug("Found {} secure notes matching query '{}' for user: {}", responses.size(), query, userId);
+        
+        return responses;
+    }
+
+    /**
+     * Retrieves secure notes in a specific folder.
+     * 
+     * @param userId the user ID
+     * @param folderId the folder ID
+     * @return list of secure note responses in the folder
+     * @throws IllegalArgumentException if user or folder not found
+     */
+    @Transactional(readOnly = true)
+    public List<SecureNoteResponse> getSecureNotesByFolder(UUID userId, UUID folderId) {
+        logger.debug("Retrieving secure notes in folder {} for user: {}", folderId, userId);
+
+        // Verify user exists
+        if (!userRepository.existsById(userId)) {
+            throw new IllegalArgumentException("User not found: " + userId);
+        }
+
+        // Verify folder exists and belongs to user
+        if (!folderRepository.findActiveByIdAndUserId(folderId, userId).isPresent()) {
+            throw new IllegalArgumentException("Folder not found: " + folderId);
+        }
+
+        List<SecureNote> notes = secureNoteRepository.findActiveByUserIdAndFolderId(userId, folderId);
+        
+        List<SecureNoteResponse> responses = notes.stream()
+                .map(SecureNoteResponse::fromEntity)
+                .collect(Collectors.toList());
+
+        logger.debug("Retrieved {} secure notes in folder {} for user: {}", responses.size(), folderId, userId);
+        
+        return responses;
+    }
+
     // ========== Helper Methods ==========
 
     /**
@@ -832,6 +1144,51 @@ public class VaultService {
 
         if (request.getDescription() != null && request.getDescription().length() > 500) {
             throw new IllegalArgumentException("Tag description must not exceed 500 characters");
+        }
+    }
+
+    /**
+     * Validates a secure note request.
+     * 
+     * @param request the request to validate
+     * @param isUpdate whether this is an update operation
+     * @throws IllegalArgumentException if validation fails
+     */
+    private void validateSecureNoteRequest(SecureNoteRequest request, boolean isUpdate) {
+        if (request == null) {
+            throw new IllegalArgumentException("Secure note request is required");
+        }
+
+        if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
+            throw new IllegalArgumentException("Title is required");
+        }
+
+        if (request.getTitle().trim().length() > 255) {
+            throw new IllegalArgumentException("Title must not exceed 255 characters");
+        }
+
+        if (request.getEncryptedContent() == null || request.getEncryptedContent().trim().isEmpty()) {
+            throw new IllegalArgumentException("Encrypted content is required");
+        }
+
+        if (request.getContentIv() == null || request.getContentIv().trim().isEmpty()) {
+            throw new IllegalArgumentException("Content IV is required");
+        }
+
+        if (request.getContentAuthTag() == null || request.getContentAuthTag().trim().isEmpty()) {
+            throw new IllegalArgumentException("Content authentication tag is required");
+        }
+
+        if (!request.hasValidAttachmentFields()) {
+            throw new IllegalArgumentException("Attachment fields are inconsistent. If attachments are provided, all related fields (IV, auth tag, size, count) must be present.");
+        }
+
+        if (isUpdate && request.getVersion() == null) {
+            throw new IllegalArgumentException("Version is required for update operations");
+        }
+
+        if (!isUpdate && request.getVersion() != null) {
+            throw new IllegalArgumentException("Version should not be specified for create operations");
         }
     }
 }
