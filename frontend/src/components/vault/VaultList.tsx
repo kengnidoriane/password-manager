@@ -4,7 +4,7 @@
  * VaultList Component
  * 
  * Displays a list of credentials with search and filtering capabilities.
- * Supports folder filtering, tag filtering, and text search.
+ * Supports folder filtering, tag filtering, and advanced text search.
  */
 
 import { useState, useMemo } from 'react';
@@ -13,7 +13,6 @@ import { useSearch } from '@/hooks/useSearch';
 import { CredentialCard } from './CredentialCard';
 import { SearchBar } from './SearchBar';
 import { SearchResults } from './SearchResults';
-import { SearchFilters } from '@/types/vault';
 
 interface VaultListProps {
   onCredentialSelect?: (credentialId: string) => void;
@@ -27,20 +26,46 @@ export function VaultList({
   selectedCredentialId 
 }: VaultListProps) {
   const { 
-    filteredCredentials, 
+    credentials,
+    secureNotes,
     folders, 
     tags, 
     selectedFolderId, 
     selectedTags, 
-    searchQuery,
-    setSearchQuery,
     setSelectedFolder,
     setSelectedTags,
     isLoading 
   } = useVault();
 
+  const {
+    query,
+    searchResults,
+    hasQuery,
+    hasResults,
+    isEmpty
+  } = useSearch();
+
   const [sortBy, setSortBy] = useState<'name' | 'lastUsed' | 'created'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Filter credentials based on folder and tag selection
+  const filteredCredentials = useMemo(() => {
+    let filtered = credentials.filter(credential => !credential.deletedAt);
+
+    // Apply folder filter
+    if (selectedFolderId) {
+      filtered = filtered.filter(credential => credential.folderId === selectedFolderId);
+    }
+
+    // Apply tag filter (must have ALL selected tags)
+    if (selectedTags.length > 0) {
+      filtered = filtered.filter(credential =>
+        selectedTags.every(tagId => credential.tags.includes(tagId))
+      );
+    }
+
+    return filtered;
+  }, [credentials, selectedFolderId, selectedTags]);
 
   // Sort credentials based on selected criteria
   const sortedCredentials = useMemo(() => {
@@ -67,10 +92,6 @@ export function VaultList({
     return sorted;
   }, [filteredCredentials, sortBy, sortOrder]);
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-  };
-
   const handleFolderFilter = (folderId: string | null) => {
     setSelectedFolder(folderId);
   };
@@ -83,12 +104,11 @@ export function VaultList({
   };
 
   const clearFilters = () => {
-    setSearchQuery('');
     setSelectedFolder(null);
     setSelectedTags([]);
   };
 
-  const hasActiveFilters = searchQuery || selectedFolderId || selectedTags.length > 0;
+  const hasActiveFilters = selectedFolderId || selectedTags.length > 0;
 
   if (isLoading) {
     return (
@@ -122,35 +142,15 @@ export function VaultList({
 
   return (
     <div className="space-y-4">
-      {/* Search and Filter Bar */}
-      <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-        {/* Search Input */}
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-            <svg
-              className="h-5 w-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </div>
-          <input
-            type="text"
-            placeholder="Search credentials..."
-            value={searchQuery}
-            onChange={handleSearchChange}
-            className="block w-full rounded-md border border-gray-300 pl-10 pr-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
-          />
-        </div>
+      {/* Advanced Search Bar */}
+      <SearchBar 
+        placeholder="Search credentials and notes..."
+        className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900"
+      />
 
-        {/* Filters Row */}
+      {/* Additional Filters */}
+      <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+
         <div className="flex flex-wrap items-center gap-4">
           {/* Folder Filter */}
           <div className="flex items-center gap-2">
@@ -169,43 +169,6 @@ export function VaultList({
                 </option>
               ))}
             </select>
-          </div>
-
-          {/* Sort Options */}
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Sort by:
-            </label>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as 'name' | 'lastUsed' | 'created')}
-              className="rounded-md border border-gray-300 px-3 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="name">Name</option>
-              <option value="lastUsed">Last Used</option>
-              <option value="created">Date Created</option>
-            </select>
-            <button
-              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-              className="rounded-md border border-gray-300 p-1 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
-              title={`Sort ${sortOrder === 'asc' ? 'descending' : 'ascending'}`}
-            >
-              <svg
-                className={`h-4 w-4 text-gray-600 dark:text-gray-400 ${
-                  sortOrder === 'desc' ? 'rotate-180' : ''
-                }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M7 11l5-5m0 0l5 5m-5-5v12"
-                />
-              </svg>
-            </button>
           </div>
 
           {/* Clear Filters */}
@@ -263,49 +226,97 @@ export function VaultList({
         )}
       </div>
 
-      {/* Results Summary */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          {sortedCredentials.length} credential{sortedCredentials.length !== 1 ? 's' : ''} found
-          {hasActiveFilters && ' (filtered)'}
-        </p>
-      </div>
-
-      {/* Credentials List */}
-      {sortedCredentials.length === 0 ? (
-        <div className="rounded-lg border border-gray-200 bg-white p-8 text-center dark:border-gray-800 dark:bg-gray-900">
-          {hasActiveFilters ? (
-            <div className="space-y-2">
-              <p className="text-gray-500 dark:text-gray-400">
-                No credentials match your current filters
-              </p>
-              <button
-                onClick={clearFilters}
-                className="text-blue-600 hover:text-blue-500 dark:text-blue-400"
+      {/* Search Results or Regular List */}
+      {hasQuery ? (
+        <SearchResults
+          onCredentialSelect={onCredentialSelect}
+          onCredentialEdit={onCredentialEdit}
+          selectedCredentialId={selectedCredentialId}
+        />
+      ) : (
+        <>
+          {/* Results Summary */}
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {sortedCredentials.length} credential{sortedCredentials.length !== 1 ? 's' : ''} found
+              {hasActiveFilters && ' (filtered)'}
+            </p>
+            
+            {/* Sort Options for non-search view */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Sort by:
+              </label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as 'name' | 'lastUsed' | 'created')}
+                className="rounded-md border border-gray-300 px-3 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
               >
-                Clear filters to see all credentials
-              </button>
+                <option value="name">Name</option>
+                <option value="lastUsed">Last Used</option>
+                <option value="created">Date Created</option>
+              </select>
+              <button
+                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                className="rounded-md border border-gray-300 p-1 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
+                title={`Sort ${sortOrder === 'asc' ? 'descending' : 'ascending'}`}
+              >
+                <svg
+                  className={`h-4 w-4 text-gray-600 dark:text-gray-400 ${
+                    sortOrder === 'desc' ? 'rotate-180' : ''
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 11l5-5m0 0l5 5m-5-5v12"
+                  />
+                </svg>
+                </button>
+            </div>
+          </div>
+
+          {/* Credentials List */}
+          {sortedCredentials.length === 0 ? (
+            <div className="rounded-lg border border-gray-200 bg-white p-8 text-center dark:border-gray-800 dark:bg-gray-900">
+              {hasActiveFilters ? (
+                <div className="space-y-2">
+                  <p className="text-gray-500 dark:text-gray-400">
+                    No credentials match your current filters
+                  </p>
+                  <button
+                    onClick={clearFilters}
+                    className="text-blue-600 hover:text-blue-500 dark:text-blue-400"
+                  >
+                    Clear filters to see all credentials
+                  </button>
+                </div>
+              ) : (
+                <p className="text-gray-500 dark:text-gray-400">
+                  No credentials found. Create your first credential to get started.
+                </p>
+              )}
             </div>
           ) : (
-            <p className="text-gray-500 dark:text-gray-400">
-              No credentials found. Create your first credential to get started.
-            </p>
+            <div className="space-y-3">
+              {sortedCredentials.map((credential) => (
+                <CredentialCard
+                  key={credential.id}
+                  credential={credential}
+                  isSelected={selectedCredentialId === credential.id}
+                  onSelect={() => onCredentialSelect?.(credential.id)}
+                  onEdit={() => onCredentialEdit?.(credential.id)}
+                  folders={folders}
+                  tags={tags}
+                />
+              ))}
+            </div>
           )}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {sortedCredentials.map((credential) => (
-            <CredentialCard
-              key={credential.id}
-              credential={credential}
-              isSelected={selectedCredentialId === credential.id}
-              onSelect={() => onCredentialSelect?.(credential.id)}
-              onEdit={() => onCredentialEdit?.(credential.id)}
-              folders={folders}
-              tags={tags}
-            />
-          ))}
-        </div>
+        </>
       )}
     </div>
   );
