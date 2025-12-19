@@ -149,7 +149,7 @@ describe('useVault Hook', () => {
 
   describe('Initialization', () => {
     it('should initialize with empty vault data', async () => {
-      const { result, waitForNextUpdate } = renderHook(() => useVault());
+      const { result } = renderHook(() => useVault());
 
       // Wait for the initial load to complete
       await act(async () => {
