@@ -9,3 +9,7 @@ export { CredentialCard } from './CredentialCard';
 export { CredentialForm } from './CredentialForm';
 export { FolderTree } from './FolderTree';
 export { TagManager } from './TagManager';
+export { SecureNoteList } from './SecureNoteList';
+export { SecureNoteForm } from './SecureNoteForm';
+export { SearchBar } from './SearchBar';
+export { SearchResults } from './SearchResults';
