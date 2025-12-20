@@ -332,4 +332,26 @@ public interface FolderRepository extends JpaRepository<Folder, UUID> {
      */
     @Query("SELECT f FROM Folder f WHERE f.user.id = :userId AND f.deletedAt IS NULL AND (LOWER(f.name) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(f.description) LIKE LOWER(CONCAT('%', :query, '%'))) ORDER BY f.name ASC")
     List<Folder> searchByQuery(@Param("query") String query, @Param("userId") UUID userId);
+
+    // ========== Sync-specific Operations ==========
+
+    /**
+     * Finds active folders updated since a specific timestamp.
+     * 
+     * @param userId the user ID
+     * @param since the timestamp to compare against
+     * @return list of folders updated since the timestamp
+     */
+    @Query("SELECT f FROM Folder f WHERE f.user.id = :userId AND f.deletedAt IS NULL AND f.updatedAt > :since ORDER BY f.updatedAt ASC")
+    List<Folder> findActiveByUserIdUpdatedSince(@Param("userId") UUID userId, @Param("since") LocalDateTime since);
+
+    /**
+     * Finds IDs of folders deleted since a specific timestamp.
+     * 
+     * @param userId the user ID
+     * @param since the timestamp to compare against
+     * @return list of deleted folder IDs
+     */
+    @Query("SELECT f.id FROM Folder f WHERE f.user.id = :userId AND f.deletedAt IS NOT NULL AND f.deletedAt > :since")
+    List<UUID> findDeletedFolderIdsByUserIdSince(@Param("userId") UUID userId, @Param("since") LocalDateTime since);
 }

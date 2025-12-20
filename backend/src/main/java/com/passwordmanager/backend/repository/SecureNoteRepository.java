@@ -390,4 +390,26 @@ public interface SecureNoteRepository extends JpaRepository<SecureNote, UUID> {
      */
     @Query("SELECT s FROM SecureNote s WHERE s.user.id = :userId AND s.id = :noteId AND s.version != :version")
     Optional<SecureNote> findVersionConflict(@Param("userId") UUID userId, @Param("noteId") UUID noteId, @Param("version") Long version);
+
+    // ========== Sync-specific Operations ==========
+
+    /**
+     * Finds active secure notes updated since a specific timestamp.
+     * 
+     * @param userId the user ID
+     * @param since the timestamp to compare against
+     * @return list of notes updated since the timestamp
+     */
+    @Query("SELECT s FROM SecureNote s WHERE s.user.id = :userId AND s.deletedAt IS NULL AND s.updatedAt > :since ORDER BY s.updatedAt ASC")
+    List<SecureNote> findActiveByUserIdUpdatedSince(@Param("userId") UUID userId, @Param("since") LocalDateTime since);
+
+    /**
+     * Finds IDs of secure notes deleted since a specific timestamp.
+     * 
+     * @param userId the user ID
+     * @param since the timestamp to compare against
+     * @return list of deleted note IDs
+     */
+    @Query("SELECT s.id FROM SecureNote s WHERE s.user.id = :userId AND s.deletedAt IS NOT NULL AND s.deletedAt > :since")
+    List<UUID> findDeletedNoteIdsByUserIdSince(@Param("userId") UUID userId, @Param("since") LocalDateTime since);
 }

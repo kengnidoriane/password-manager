@@ -6,8 +6,11 @@ import com.passwordmanager.backend.dto.FolderRequest;
 import com.passwordmanager.backend.dto.FolderResponse;
 import com.passwordmanager.backend.dto.SecureNoteRequest;
 import com.passwordmanager.backend.dto.SecureNoteResponse;
+import com.passwordmanager.backend.dto.SyncRequest;
+import com.passwordmanager.backend.dto.SyncResponse;
 import com.passwordmanager.backend.dto.TagRequest;
 import com.passwordmanager.backend.dto.TagResponse;
+import com.passwordmanager.backend.service.SyncService;
 import com.passwordmanager.backend.service.VaultService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -65,9 +68,11 @@ public class VaultController {
     private static final Logger logger = LoggerFactory.getLogger(VaultController.class);
 
     private final VaultService vaultService;
+    private final SyncService syncService;
 
-    public VaultController(VaultService vaultService) {
+    public VaultController(VaultService vaultService, SyncService syncService) {
         this.vaultService = vaultService;
+        this.syncService = syncService;
     }
 
     /**
@@ -1473,6 +1478,105 @@ public class VaultController {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("error", "retrieval_failed");
             errorResponse.put("message", "Failed to filter credentials by tag");
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    // ========== Sync Endpoint ==========
+
+    /**
+     * Synchronizes vault changes between client and server.
+     * 
+     * This endpoint handles bidirectional synchronization, processing
+     * client changes and returning server updates. It implements
+     * last-write-wins conflict resolution and provides delta updates
+     * to minimize bandwidth usage.
+     * 
+     * @param request The sync request containing client changes
+     * @param httpRequest HTTP request for logging purposes
+     * @return Sync response with conflicts and delta updates
+     */
+    @PostMapping("/sync")
+    @Operation(
+        summary = "Synchronize vault changes",
+        description = "Synchronizes vault changes between client and server. " +
+                     "Processes client changes, detects conflicts, applies last-write-wins resolution, " +
+                     "and returns delta updates to minimize bandwidth usage."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Sync completed successfully",
+            content = @Content(schema = @Schema(implementation = SyncResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid sync request data",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - invalid or expired token",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "409",
+            description = "Sync conflicts detected - check response for conflict details",
+            content = @Content(schema = @Schema(implementation = SyncResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error during sync",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        )
+    })
+    public ResponseEntity<?> synchronizeVault(
+            @Valid @RequestBody SyncRequest request,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID userId = getCurrentUserId();
+            String clientIp = getClientIpAddress(httpRequest);
+            String userAgent = httpRequest.getHeader("User-Agent");
+            
+            logger.debug("Starting vault sync for user: {} from IP: {} with {} changes", 
+                        userId, clientIp, request.getTotalChangeCount());
+            
+            SyncResponse response = syncService.synchronizeVault(userId, request, clientIp, userAgent);
+            
+            if (response.isSuccess()) {
+                if (response.hasConflicts()) {
+                    logger.info("Vault sync completed with conflicts for user: {} - {} conflicts detected", 
+                               userId, response.getConflictCount());
+                    return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+                } else {
+                    logger.info("Vault sync completed successfully for user: {} - processed {} items in {}ms", 
+                               userId, response.getStats().getTotalProcessed(), 
+                               response.getStats().getSyncDurationMs());
+                    return ResponseEntity.ok(response);
+                }
+            } else {
+                logger.error("Vault sync failed for user: {} - {}", userId, response.getErrorMessage());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            }
+            
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid sync request: {}", e.getMessage());
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "invalid_request");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            
+        } catch (Exception e) {
+            logger.error("Error during vault sync: {}", e.getMessage(), e);
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "sync_failed");
+            errorResponse.put("message", "Vault synchronization failed");
             errorResponse.put("timestamp", LocalDateTime.now());
             
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);

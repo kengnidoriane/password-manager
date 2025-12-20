@@ -350,4 +350,26 @@ public interface TagRepository extends JpaRepository<Tag, UUID> {
         }
         return validateTagOwnership(tagIds, userId, tagIds.size());
     }
+
+    // ========== Sync-specific Operations ==========
+
+    /**
+     * Finds active tags updated since a specific timestamp.
+     * 
+     * @param userId the user ID
+     * @param since the timestamp to compare against
+     * @return list of tags updated since the timestamp
+     */
+    @Query("SELECT t FROM Tag t WHERE t.user.id = :userId AND t.deletedAt IS NULL AND t.updatedAt > :since ORDER BY t.updatedAt ASC")
+    List<Tag> findActiveByUserIdUpdatedSince(@Param("userId") UUID userId, @Param("since") LocalDateTime since);
+
+    /**
+     * Finds IDs of tags deleted since a specific timestamp.
+     * 
+     * @param userId the user ID
+     * @param since the timestamp to compare against
+     * @return list of deleted tag IDs
+     */
+    @Query("SELECT t.id FROM Tag t WHERE t.user.id = :userId AND t.deletedAt IS NOT NULL AND t.deletedAt > :since")
+    List<UUID> findDeletedTagIdsByUserIdSince(@Param("userId") UUID userId, @Param("since") LocalDateTime since);
 }

@@ -326,4 +326,28 @@ public interface VaultRepository extends JpaRepository<VaultEntry, UUID> {
      */
     @Query("SELECT COUNT(v) > 0 FROM VaultEntry v WHERE v.user.id = :userId")
     boolean existsByUserId(@Param("userId") UUID userId);
+
+    // ========== Sync-specific Operations ==========
+
+    /**
+     * Finds active credentials updated since a specific timestamp.
+     * 
+     * @param userId the user ID
+     * @param since the timestamp to compare against
+     * @return list of credentials updated since the timestamp
+     */
+    @Query("SELECT v FROM VaultEntry v WHERE v.user.id = :userId AND v.entryType = 'CREDENTIAL' " +
+           "AND v.deletedAt IS NULL AND v.updatedAt > :since ORDER BY v.updatedAt ASC")
+    List<VaultEntry> findActiveCredentialsByUserIdUpdatedSince(@Param("userId") UUID userId, @Param("since") LocalDateTime since);
+
+    /**
+     * Finds IDs of credentials deleted since a specific timestamp.
+     * 
+     * @param userId the user ID
+     * @param since the timestamp to compare against
+     * @return list of deleted credential IDs
+     */
+    @Query("SELECT v.id FROM VaultEntry v WHERE v.user.id = :userId AND v.entryType = 'CREDENTIAL' " +
+           "AND v.deletedAt IS NOT NULL AND v.deletedAt > :since")
+    List<UUID> findDeletedCredentialIdsByUserIdSince(@Param("userId") UUID userId, @Param("since") LocalDateTime since);
 }
