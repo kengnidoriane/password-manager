@@ -49,7 +49,7 @@ export function SearchBar({
   // Notify parent of results changes
   useEffect(() => {
     if (onResultsChange) {
-      onResultsChange(hasResults, searchResults?.totalResults || 0);
+      onResultsChange(hasResults ?? false, searchResults?.totalResults || 0);
     }
   }, [hasResults, searchResults?.totalResults, onResultsChange]);
 

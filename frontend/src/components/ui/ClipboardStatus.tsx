@@ -35,7 +35,7 @@ export function ClipboardStatus({ className = '' }: ClipboardStatusProps) {
     }
   };
 
-  const getOperationIcon = (type: string): JSX.Element => {
+  const getOperationIcon = (type: string): React.ReactElement => {
     switch (type) {
       case 'username':
         return (

@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { clipboardService, ClipboardState } from '@/services/clipboardService';
+import { getClipboardService, ClipboardService, ClipboardState } from '@/services/clipboardService';
 import { ClipboardOperation } from '@/types/vault';
 import { useVault } from '@/hooks/useVault';
 
@@ -30,12 +30,27 @@ export interface UseClipboardReturn {
  */
 export const useClipboard = (): UseClipboardReturn => {
   const { updateLastUsed } = useVault();
-  const [state, setState] = useState<ClipboardState>(clipboardService.getState());
+  const [state, setState] = useState<ClipboardState>(() => {
+    // Only initialize on client side
+    if (typeof window !== 'undefined') {
+      return getClipboardService().getState();
+    }
+    return {
+      isActive: false,
+      operation: null,
+      remainingTime: 0,
+      timerId: null,
+      countdownTimerId: null
+    };
+  });
 
   // Subscribe to clipboard service state changes
   useEffect(() => {
-    const unsubscribe = clipboardService.subscribe(setState);
-    return unsubscribe;
+    if (typeof window !== 'undefined') {
+      const clipboardService = getClipboardService();
+      const unsubscribe = clipboardService.subscribe(setState);
+      return unsubscribe;
+    }
   }, []);
 
   /**
@@ -46,12 +61,17 @@ export const useClipboard = (): UseClipboardReturn => {
     type: ClipboardOperation['type'],
     credentialId: string
   ): Promise<void> => {
+    if (typeof window === 'undefined') return;
+    
     try {
+      const clipboardService = getClipboardService();
       // Copy to clipboard with auto-clear
       await clipboardService.copyToClipboard(text, type, credentialId);
       
       // Update last used timestamp for the credential
-      await updateLastUsed(credentialId);
+      if (credentialId !== 'generated-password') {
+        await updateLastUsed(credentialId);
+      }
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
       throw error;
@@ -62,7 +82,10 @@ export const useClipboard = (): UseClipboardReturn => {
    * Manually clear clipboard
    */
   const clearClipboard = useCallback(async (): Promise<void> => {
+    if (typeof window === 'undefined') return;
+    
     try {
+      const clipboardService = getClipboardService();
       await clipboardService.manualClear();
     } catch (error) {
       console.error('Failed to clear clipboard:', error);
@@ -73,7 +96,7 @@ export const useClipboard = (): UseClipboardReturn => {
   /**
    * Get formatted remaining time
    */
-  const formattedTime = clipboardService.getFormattedRemainingTime();
+  const formattedTime = typeof window !== 'undefined' ? getClipboardService().getFormattedRemainingTime() : '0:00';
 
   return {
     // State
@@ -87,6 +110,6 @@ export const useClipboard = (): UseClipboardReturn => {
     clearClipboard,
     
     // Utilities
-    isSupported: clipboardService.constructor.isSupported()
+    isSupported: ClipboardService.isSupported()
   };
 };

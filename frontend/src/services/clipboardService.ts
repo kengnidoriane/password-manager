@@ -68,7 +68,7 @@ export class ClipboardService {
   ): Promise<void> {
     try {
       // Check if clipboard API is available
-      if (!navigator.clipboard) {
+      if (typeof navigator === 'undefined' || !navigator.clipboard) {
         throw new Error('Clipboard API not available');
       }
 
@@ -134,7 +134,7 @@ export class ClipboardService {
   async clearClipboard(): Promise<void> {
     try {
       // Clear clipboard content
-      if (navigator.clipboard) {
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
         await navigator.clipboard.writeText('');
       }
     } catch (error) {
@@ -279,5 +279,5 @@ export class ClipboardService {
   }
 }
 
-// Export singleton instance
-export const clipboardService = ClipboardService.getInstance();
+// Export singleton getter for lazy initialization
+export const getClipboardService = () => ClipboardService.getInstance();

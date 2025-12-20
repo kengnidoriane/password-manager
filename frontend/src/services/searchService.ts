@@ -340,7 +340,7 @@ export class SearchService {
   /**
    * Sort search results
    */
-  private sortResults<T>(
+  private sortResults<T extends { createdAt: number; lastUsed?: number; title?: string }>(
     results: SearchResult<T>[],
     sortBy: string,
     sortOrder: 'asc' | 'desc'

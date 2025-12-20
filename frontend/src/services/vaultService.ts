@@ -77,7 +77,7 @@ interface RetryConfig {
 export class VaultService {
   private static instance: VaultService;
   private encryptionKey: CryptoKey | null = null;
-  private isOnline: boolean = navigator.onLine;
+  private isOnline: boolean = typeof navigator !== 'undefined' ? navigator.onLine : true;
   private syncInProgress: boolean = false;
   private retryConfig: RetryConfig = {
     maxAttempts: 3,
@@ -87,15 +87,17 @@ export class VaultService {
   };
 
   private constructor() {
-    // Listen for online/offline events
-    window.addEventListener('online', () => {
-      this.isOnline = true;
-      this.processPendingSyncOperations();
-    });
-    
-    window.addEventListener('offline', () => {
-      this.isOnline = false;
-    });
+    // Listen for online/offline events (only in browser)
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => {
+        this.isOnline = true;
+        this.processPendingSyncOperations();
+      });
+      
+      window.addEventListener('offline', () => {
+        this.isOnline = false;
+      });
+    }
   }
 
   /**
