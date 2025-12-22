@@ -16,7 +16,7 @@
 *.iml
 *.swp
 *.swo
-.backend/target/*
+backend/target/
 
 # OS
 .DS_Store
