@@ -1,4 +1,5 @@
 com\passwordmanager\backend\entity\BackupCodeTest.class
+com\passwordmanager\backend\service\SyncPropertyTest.class
 com\passwordmanager\backend\service\AuthenticationPropertyTest$UserCredentials.class
 com\passwordmanager\backend\entity\SessionTest.class
 com\passwordmanager\backend\PasswordManagerApplicationTests.class

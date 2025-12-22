@@ -1,4 +1,4 @@
-#Sat Dec 20 14:26:11 WEST 2025
+#Sat Dec 20 15:37:07 WEST 2025
 C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\config\\CorsConfig.java=1764937413665
 C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\config\\JwtProperties.java=1764937961373
 C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\config\\OpenApiConfig.java=1764937428962
@@ -25,10 +25,9 @@ C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\c
 C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\entity\\UserAccount.java=1766073527314
 C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\entity\\VaultEntry.java=1766136092831
 C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\repository\\BackupCodeRepository.java=1766073527321
-C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\repository\\FolderRepository.java=1766136092832
-C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\repository\\SecureNoteRepository.java=1766136092833
-C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\repository\\TagRepository.java=1766136092834
+C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\repository\\FolderRepository.java=1766238178440
+C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\repository\\SecureNoteRepository.java=1766238217261
+C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\repository\\TagRepository.java=1766238195919
 C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\repository\\UserRepository.java=1766073527325
-C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\repository\\VaultRepository.java=1766136092835
 C\:\\Users\\doriane\\Documents\\password\ managment\\backend\\src\\main\\java\\com\\passwordmanager\\backend\\service\\CustomUserDetailsService.java=1766073527333
 configuration*?=D2E6D14F01A42105637CBE6F2C6442CFB7E9BD91

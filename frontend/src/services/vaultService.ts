@@ -138,7 +138,7 @@ export class VaultService {
   /**
    * Add operation to sync queue and attempt immediate sync if online
    */
-  private async addToSyncQueue(
+  async addToSyncQueue(
     operation: 'create' | 'update' | 'delete',
     resourceType: 'credential' | 'folder' | 'tag' | 'note',
     resourceId: string,
