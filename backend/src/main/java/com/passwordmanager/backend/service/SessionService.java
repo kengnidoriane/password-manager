@@ -85,7 +85,7 @@ public class SessionService {
                        session.getId(), user.getId(), ipAddress);
 
             // Log session creation
-            auditLogService.logSessionCreated(user.getEmail(), session.getId().toString(), 
+            auditLogService.logSessionCreated(user, session.getId().toString(), 
                                             ipAddress, deviceInfo);
 
             return session;
@@ -196,7 +196,7 @@ public class SessionService {
             
             // Log session expiration
             if (session != null) {
-                auditLogService.logSessionExpired(session.getUser().getEmail(), 
+                auditLogService.logSessionExpired(session.getUser(), 
                                                 sessionId.toString(), "LOGOUT");
             }
             
