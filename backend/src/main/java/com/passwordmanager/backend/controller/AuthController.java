@@ -2,12 +2,17 @@ package com.passwordmanager.backend.controller;
 
 import com.passwordmanager.backend.dto.LoginRequest;
 import com.passwordmanager.backend.dto.LoginResponse;
+import com.passwordmanager.backend.dto.RecoveryRequest;
+import com.passwordmanager.backend.dto.RecoveryResponse;
 import com.passwordmanager.backend.dto.RegisterRequest;
 import com.passwordmanager.backend.dto.RegisterResponse;
+import com.passwordmanager.backend.dto.TwoFactorSetupRequest;
+import com.passwordmanager.backend.dto.TwoFactorSetupResponse;
 import com.passwordmanager.backend.entity.Session;
 import com.passwordmanager.backend.entity.UserAccount;
 import com.passwordmanager.backend.service.AuthenticationService;
 import com.passwordmanager.backend.service.SessionService;
+import com.passwordmanager.backend.service.TwoFactorService;
 import com.passwordmanager.backend.util.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -33,9 +38,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * REST controller for authentication operations.
@@ -58,6 +65,7 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final SessionService sessionService;
     private final AuthenticationService authenticationService;
+    private final TwoFactorService twoFactorService;
 
     @Value("${session.timeout-minutes:15}")
     private int sessionTimeoutMinutes;
@@ -65,11 +73,13 @@ public class AuthController {
     public AuthController(AuthenticationManager authenticationManager,
                          JwtUtil jwtUtil,
                          SessionService sessionService,
-                         AuthenticationService authenticationService) {
+                         AuthenticationService authenticationService,
+                         TwoFactorService twoFactorService) {
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.sessionService = sessionService;
         this.authenticationService = authenticationService;
+        this.twoFactorService = twoFactorService;
     }
 
     /**
@@ -236,6 +246,42 @@ public class AuthController {
 
             // Get authenticated user details
             UserAccount user = authenticationService.getUserByEmail(loginRequest.getEmail());
+            
+            // Check if 2FA is enabled and verify code
+            if (user.has2FAEnabled()) {
+                if (loginRequest.getTwoFactorCode() == null || loginRequest.getTwoFactorCode().trim().isEmpty()) {
+                    logger.warn("2FA code required but not provided for user: {}", loginRequest.getEmail());
+                    
+                    Map<String, Object> errorResponse = new HashMap<>();
+                    errorResponse.put("error", "two_factor_required");
+                    errorResponse.put("message", "Two-factor authentication code is required");
+                    errorResponse.put("timestamp", LocalDateTime.now());
+                    
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+                }
+                
+                // Verify 2FA code
+                boolean is2FAValid = twoFactorService.verifyTotpCode(
+                    user.getId(), 
+                    loginRequest.getTwoFactorCode().trim(),
+                    false // Not a backup code for regular login
+                );
+                
+                if (!is2FAValid) {
+                    // Record failed login attempt (counts toward rate limiting)
+                    String userAgent = request.getHeader("User-Agent");
+                    authenticationService.recordFailedLogin(loginRequest.getEmail(), clientIp, userAgent, "Invalid 2FA code");
+                    
+                    logger.warn("Invalid 2FA code for user: {} from IP: {}", loginRequest.getEmail(), clientIp);
+                    
+                    Map<String, Object> errorResponse = new HashMap<>();
+                    errorResponse.put("error", "invalid_two_factor_code");
+                    errorResponse.put("message", "Invalid two-factor authentication code");
+                    errorResponse.put("timestamp", LocalDateTime.now());
+                    
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+                }
+            }
             
             // Generate JWT token
             String jwtToken = jwtUtil.generateToken((UserDetails) authentication.getPrincipal());
@@ -412,5 +458,245 @@ public class AuthController {
      */
     private void recordRegistrationAttempt(String ipAddress) {
         authenticationService.recordRegistrationAttempt(ipAddress);
+    }
+
+    /**
+     * Sets up two-factor authentication for the authenticated user.
+     * 
+     * This endpoint:
+     * - Generates a TOTP secret for the user
+     * - Creates a QR code for easy setup with authenticator apps
+     * - Generates backup codes for emergency access
+     * - Returns setup information to the client
+     * 
+     * @param setupRequest 2FA setup request
+     * @param principal Authenticated user principal
+     * @return 2FA setup response with secret, QR code, and backup codes
+     */
+    @PostMapping("/2fa/setup")
+    @Operation(
+        summary = "Setup two-factor authentication",
+        description = "Generates TOTP secret, QR code, and backup codes for 2FA setup. " +
+                     "The user must verify a TOTP code to complete the setup process."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "2FA setup successful",
+            content = @Content(schema = @Schema(implementation = TwoFactorSetupResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "User not authenticated",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid request or 2FA already enabled",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        )
+    })
+    public ResponseEntity<?> setupTwoFactor(@Valid @RequestBody TwoFactorSetupRequest setupRequest,
+                                           Principal principal) {
+        try {
+            // Get authenticated user
+            String userEmail = principal.getName();
+            UserAccount user = authenticationService.getUserByEmail(userEmail);
+            
+            // Verify the user ID matches the authenticated user
+            if (!user.getId().equals(setupRequest.getUserId())) {
+                logger.warn("2FA setup attempt with mismatched user ID for user: {}", userEmail);
+                
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("error", "unauthorized");
+                errorResponse.put("message", "Cannot setup 2FA for another user");
+                errorResponse.put("timestamp", LocalDateTime.now());
+                
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+            }
+            
+            // Check if 2FA is already enabled
+            if (user.has2FAEnabled()) {
+                logger.warn("2FA setup attempted for user with 2FA already enabled: {}", userEmail);
+                
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("error", "two_factor_already_enabled");
+                errorResponse.put("message", "Two-factor authentication is already enabled");
+                errorResponse.put("timestamp", LocalDateTime.now());
+                
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            }
+
+            // Setup 2FA
+            TwoFactorSetupResponse response = twoFactorService.setupTwoFactor(user.getId());
+
+            logger.info("2FA setup completed for user: {}", userEmail);
+
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            logger.warn("2FA setup failed: {}", e.getMessage());
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "setup_failed");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("timestamp", LocalDateTime.now());
+
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+
+        } catch (Exception e) {
+            logger.error("Unexpected error during 2FA setup for user: {} - {}", 
+                        principal.getName(), e.getMessage(), e);
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "internal_server_error");
+            errorResponse.put("message", "2FA setup failed due to internal error");
+            errorResponse.put("timestamp", LocalDateTime.now());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * Recovers an account using the backup recovery key and sets a new master password.
+     * 
+     * This endpoint:
+     * - Validates the provided recovery key against the stored hash
+     * - Updates the user's authentication credentials with new master password
+     * - Re-encrypts the vault with keys derived from the new master password
+     * - Generates a new recovery key and invalidates the old one
+     * - Sends email notification about the recovery
+     * 
+     * @param recoveryRequest Recovery data (email, recovery key, new credentials)
+     * @param request HTTP request for extracting client information
+     * @return New recovery key and success confirmation
+     */
+    @PostMapping("/recovery")
+    @Operation(
+        summary = "Recover account with backup recovery key",
+        description = "Allows users to recover their account if they forget their master password. " +
+                     "Requires the backup recovery key generated during account creation. " +
+                     "Sets new master password and generates new recovery key."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Account recovery successful",
+            content = @Content(schema = @Schema(implementation = RecoveryResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid recovery key or request data",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "User not found",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "429",
+            description = "Too many recovery attempts - rate limited",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        )
+    })
+    public ResponseEntity<?> recoverAccount(@Valid @RequestBody RecoveryRequest recoveryRequest,
+                                           HttpServletRequest request) {
+        try {
+            // Check rate limiting for recovery attempts from this IP
+            String clientIp = getClientIpAddress(request);
+            if (!isRecoveryAllowed(clientIp)) {
+                logger.warn("Account recovery attempt blocked due to rate limiting from IP: {}", clientIp);
+                
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("error", "rate_limit_exceeded");
+                errorResponse.put("message", "Too many recovery attempts. Please try again later.");
+                errorResponse.put("timestamp", LocalDateTime.now());
+                
+                return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(errorResponse);
+            }
+
+            // Record recovery attempt for rate limiting
+            recordRecoveryAttempt(clientIp);
+
+            // Validate recovery key
+            if (!authenticationService.validateRecoveryKey(recoveryRequest.getEmail(), recoveryRequest.getRecoveryKey())) {
+                logger.warn("Invalid recovery key provided for user: {} from IP: {}", 
+                           recoveryRequest.getEmail(), clientIp);
+                
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("error", "invalid_recovery_key");
+                errorResponse.put("message", "Invalid recovery key provided");
+                errorResponse.put("timestamp", LocalDateTime.now());
+                
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            }
+
+            // Perform account recovery
+            String userAgent = request.getHeader("User-Agent");
+            String deviceInfo = parseDeviceInfo(userAgent);
+            RecoveryResponse response = authenticationService.recoverAccount(recoveryRequest, clientIp, deviceInfo);
+
+            logger.info("Account recovery successful for user: {} from IP: {}", 
+                       recoveryRequest.getEmail(), clientIp);
+
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            // User not found or validation error
+            String clientIp = getClientIpAddress(request);
+            logger.warn("Account recovery failed for email: {} from IP: {} - {}", 
+                       recoveryRequest.getEmail(), clientIp, e.getMessage());
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "recovery_failed");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("timestamp", LocalDateTime.now());
+
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+
+        } catch (Exception e) {
+            logger.error("Unexpected error during account recovery for email: {} - {}", 
+                        recoveryRequest.getEmail(), e.getMessage(), e);
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "internal_server_error");
+            errorResponse.put("message", "Account recovery failed due to internal error");
+            errorResponse.put("timestamp", LocalDateTime.now());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * Checks if account recovery is allowed from the given IP address.
+     * 
+     * Implements rate limiting to prevent abuse:
+     * - Maximum 3 recovery attempts per IP per hour
+     * 
+     * @param ipAddress Client IP address
+     * @return true if recovery is allowed, false if rate limited
+     */
+    private boolean isRecoveryAllowed(String ipAddress) {
+        return authenticationService.isRecoveryAllowed(ipAddress);
+    }
+
+    /**
+     * Records a recovery attempt for rate limiting purposes.
+     * 
+     * @param ipAddress Client IP address
+     */
+    private void recordRecoveryAttempt(String ipAddress) {
+        authenticationService.recordRecoveryAttempt(ipAddress);
     }
 }

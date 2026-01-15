@@ -1191,4 +1191,55 @@ public class VaultService {
             throw new IllegalArgumentException("Version should not be specified for create operations");
         }
     }
+
+    /**
+     * Re-encrypts all vault data for a user after account recovery.
+     * 
+     * This method is called during account recovery to re-encrypt all vault entries
+     * with the new master password. Since the vault data is encrypted client-side,
+     * this method marks all entries as requiring re-encryption on the client side.
+     * 
+     * Note: In a zero-knowledge architecture, the server cannot decrypt and re-encrypt
+     * the vault data. Instead, this method marks entries for client-side re-encryption
+     * during the next sync operation.
+     * 
+     * @param userId the user ID whose vault needs re-encryption
+     * @throws IllegalArgumentException if user not found
+     */
+    @Transactional
+    public void markVaultForReEncryption(UUID userId) {
+        logger.info("Marking vault for re-encryption after recovery for user: {}", userId);
+
+        // Verify user exists
+        if (!userRepository.existsById(userId)) {
+            throw new IllegalArgumentException("User not found: " + userId);
+        }
+
+        try {
+            // Mark all active vault entries for re-encryption
+            List<VaultEntry> entries = vaultRepository.findActiveCredentialsByUserId(userId);
+            for (VaultEntry entry : entries) {
+                // Increment version to force client-side re-encryption during sync
+                entry.incrementVersion();
+                entry.setUpdatedAt(LocalDateTime.now());
+            }
+            vaultRepository.saveAll(entries);
+
+            // Mark all active secure notes for re-encryption
+            List<SecureNote> notes = secureNoteRepository.findActiveByUserId(userId);
+            for (SecureNote note : notes) {
+                // Increment version to force client-side re-encryption during sync
+                note.incrementVersion();
+                note.setUpdatedAt(LocalDateTime.now());
+            }
+            secureNoteRepository.saveAll(notes);
+
+            logger.info("Marked {} vault entries and {} secure notes for re-encryption for user: {}", 
+                       entries.size(), notes.size(), userId);
+
+        } catch (Exception e) {
+            logger.error("Error marking vault for re-encryption for user {}: {}", userId, e.getMessage());
+            throw new RuntimeException("Failed to mark vault for re-encryption", e);
+        }
+    }
 }

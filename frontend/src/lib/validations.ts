@@ -49,10 +49,25 @@ export type CredentialFormData = z.infer<typeof credentialSchema>;
 export const loginSchema = z.object({
   email: emailSchema,
   masterPassword: z.string().min(1, 'Master password is required'),
-  twoFactorCode: z.string().optional()
+  twoFactorCode: z.string().optional(),
+  isBackupCode: z.boolean().optional()
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;
+
+// 2FA setup validation
+export const twoFactorSetupSchema = z.object({
+  code: z.string().regex(/^[0-9]{6}$/, '2FA code must be 6 digits'),
+});
+
+export type TwoFactorSetupFormData = z.infer<typeof twoFactorSetupSchema>;
+
+// Backup code validation
+export const backupCodeSchema = z.object({
+  code: z.string().regex(/^[0-9]{8}$/, 'Backup code must be 8 digits'),
+});
+
+export type BackupCodeFormData = z.infer<typeof backupCodeSchema>;
 
 // Registration form validation
 export const registerSchema = z.object({
