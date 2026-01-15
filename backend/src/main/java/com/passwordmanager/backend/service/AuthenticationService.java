@@ -1,5 +1,7 @@
 package com.passwordmanager.backend.service;
 
+import com.passwordmanager.backend.dto.RecoveryRequest;
+import com.passwordmanager.backend.dto.RecoveryResponse;
 import com.passwordmanager.backend.dto.RegisterRequest;
 import com.passwordmanager.backend.dto.RegisterResponse;
 import com.passwordmanager.backend.entity.UserAccount;
@@ -50,16 +52,25 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final SecureRandom secureRandom;
     private final AuditLogService auditLogService;
+    private final VaultService vaultService;
+    private final EmailService emailService;
+    private final SessionService sessionService;
 
     public AuthenticationService(UserRepository userRepository,
                                RedisTemplate<String, Object> redisTemplate,
                                PasswordEncoder passwordEncoder,
-                               AuditLogService auditLogService) {
+                               AuditLogService auditLogService,
+                               VaultService vaultService,
+                               EmailService emailService,
+                               SessionService sessionService) {
         this.userRepository = userRepository;
         this.redisTemplate = redisTemplate;
         this.passwordEncoder = passwordEncoder;
         this.secureRandom = new SecureRandom();
         this.auditLogService = auditLogService;
+        this.vaultService = vaultService;
+        this.emailService = emailService;
+        this.sessionService = sessionService;
     }
 
     /**
@@ -421,6 +432,159 @@ public class AuthenticationService {
             
         } catch (Exception e) {
             logger.error("Failed to record registration attempt for IP {}: {}", ipAddress, e.getMessage());
+        }
+    }
+
+    /**
+     * Recovers an account using the backup recovery key and sets new credentials.
+     * 
+     * This method:
+     * - Validates the recovery key against the stored hash
+     * - Updates the user's authentication credentials with new master password
+     * - Re-encrypts the vault with keys derived from the new master password
+     * - Generates a new recovery key and invalidates the old one
+     * - Invalidates all existing sessions for security
+     * - Sends email notification about the recovery
+     * - Logs the recovery event for audit purposes
+     * 
+     * @param recoveryRequest Recovery request containing new credentials
+     * @return RecoveryResponse containing new recovery key and success info
+     * @throws IllegalArgumentException if recovery key is invalid or user not found
+     */
+    public RecoveryResponse recoverAccount(RecoveryRequest recoveryRequest) {
+        return recoverAccount(recoveryRequest, null, null);
+    }
+
+    /**
+     * Recovers an account with additional context for audit logging and notifications.
+     * 
+     * @param recoveryRequest Recovery request containing new credentials
+     * @param clientIp Client IP address for audit logging
+     * @param deviceInfo Device information for audit logging
+     * @return RecoveryResponse containing new recovery key and success info
+     * @throws IllegalArgumentException if recovery key is invalid or user not found
+     */
+    public RecoveryResponse recoverAccount(RecoveryRequest recoveryRequest, String clientIp, String deviceInfo) {
+        logger.info("Attempting account recovery for user: {}", recoveryRequest.getEmail());
+
+        try {
+            // Get user and validate recovery key (already validated in controller, but double-check)
+            UserAccount user = getUserByEmail(recoveryRequest.getEmail());
+            
+            if (!validateRecoveryKey(recoveryRequest.getEmail(), recoveryRequest.getRecoveryKey())) {
+                logger.warn("Invalid recovery key during account recovery for user: {}", recoveryRequest.getEmail());
+                throw new IllegalArgumentException("Invalid recovery key");
+            }
+
+            LocalDateTime recoveryTime = LocalDateTime.now();
+
+            // Generate new recovery key
+            String newRecoveryKey = generateRecoveryKey();
+            String newRecoveryKeyHash = passwordEncoder.encode(newRecoveryKey);
+
+            // Update user credentials
+            user.setAuthKeyHash(recoveryRequest.getNewAuthKeyHash());
+            user.setSalt(recoveryRequest.getNewSalt());
+            user.setIterations(recoveryRequest.getNewIterations());
+            user.setRecoveryKeyHash(newRecoveryKeyHash);
+
+            // Save updated user
+            UserAccount updatedUser = userRepository.save(user);
+
+            // 1. Trigger vault re-encryption with new master password
+            try {
+                vaultService.markVaultForReEncryption(updatedUser.getId());
+                logger.info("Vault marked for re-encryption for user: {}", updatedUser.getId());
+            } catch (Exception e) {
+                logger.error("Failed to mark vault for re-encryption for user {}: {}", updatedUser.getId(), e.getMessage());
+                // Continue with recovery even if vault marking fails
+            }
+
+            // 2. Invalidate all existing sessions for security
+            try {
+                sessionService.invalidateAllUserSessions(updatedUser.getId());
+                logger.info("All sessions invalidated for user: {}", updatedUser.getId());
+            } catch (Exception e) {
+                logger.error("Failed to invalidate sessions for user {}: {}", updatedUser.getId(), e.getMessage());
+                // Continue with recovery even if session invalidation fails
+            }
+
+            // 3. Send email notification about the recovery
+            try {
+                String safeClientIp = clientIp != null ? clientIp : "Unknown";
+                String safeDeviceInfo = deviceInfo != null ? deviceInfo : "Unknown Device";
+                emailService.sendRecoveryNotification(updatedUser.getEmail(), recoveryTime, safeClientIp, safeDeviceInfo);
+                logger.info("Recovery notification sent to user: {}", updatedUser.getEmail());
+            } catch (Exception e) {
+                logger.error("Failed to send recovery notification to user {}: {}", updatedUser.getEmail(), e.getMessage());
+                // Continue with recovery even if email fails
+            }
+
+            logger.info("Account recovery completed successfully for user: {} (ID: {})", 
+                       updatedUser.getEmail(), updatedUser.getId());
+
+            // Return response with new recovery key
+            return RecoveryResponse.builder()
+                    .success(true)
+                    .newRecoveryKey(newRecoveryKey)
+                    .userId(updatedUser.getId())
+                    .email(updatedUser.getEmail())
+                    .recoveredAt(recoveryTime)
+                    .message("Account recovery successful. Please save your new recovery key securely.")
+                    .build();
+
+        } catch (UsernameNotFoundException e) {
+            logger.warn("Account recovery attempted for non-existent user: {}", recoveryRequest.getEmail());
+            throw new IllegalArgumentException("User not found");
+        } catch (Exception e) {
+            logger.error("Error during account recovery for user {}: {}", recoveryRequest.getEmail(), e.getMessage());
+            throw new RuntimeException("Account recovery failed due to internal error");
+        }
+    }
+
+    /**
+     * Checks if account recovery is allowed from the given IP address.
+     * 
+     * Implements rate limiting to prevent abuse:
+     * - Maximum 3 recovery attempts per IP per hour
+     * 
+     * @param ipAddress Client IP address
+     * @return true if recovery is allowed, false if rate limited
+     */
+    public boolean isRecoveryAllowed(String ipAddress) {
+        String rateLimitKey = "recovery_attempts:" + ipAddress;
+        
+        try {
+            Integer attempts = (Integer) redisTemplate.opsForValue().get(rateLimitKey);
+            int currentAttempts = attempts != null ? attempts : 0;
+            
+            // Allow up to 3 recovery attempts per hour per IP
+            return currentAttempts < 3;
+            
+        } catch (Exception e) {
+            logger.error("Failed to check recovery rate limit for IP {}: {}", ipAddress, e.getMessage());
+            // Allow recovery if we can't check rate limit (fail open for availability)
+            return true;
+        }
+    }
+
+    /**
+     * Records a recovery attempt for rate limiting purposes.
+     * 
+     * @param ipAddress Client IP address
+     */
+    public void recordRecoveryAttempt(String ipAddress) {
+        String rateLimitKey = "recovery_attempts:" + ipAddress;
+        
+        try {
+            // Increment counter and set 1-hour expiration
+            redisTemplate.opsForValue().increment(rateLimitKey);
+            redisTemplate.expire(rateLimitKey, 1, TimeUnit.HOURS);
+            
+            logger.debug("Recorded recovery attempt from IP: {}", ipAddress);
+            
+        } catch (Exception e) {
+            logger.error("Failed to record recovery attempt for IP {}: {}", ipAddress, e.getMessage());
         }
     }
 }

@@ -300,4 +300,18 @@ public class VaultEntry {
         String tagIdString = tagId.toString();
         return encryptedData.contains(tagIdString);
     }
+
+    /**
+     * Increments the version number for this vault entry.
+     * 
+     * This method is used during account recovery to force client-side
+     * re-encryption of vault entries with the new master password.
+     */
+    public void incrementVersion() {
+        if (this.version == null) {
+            this.version = 1L;
+        } else {
+            this.version++;
+        }
+    }
 }

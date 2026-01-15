@@ -371,4 +371,18 @@ public class SecureNote {
         
         return lowerTitle.contains(lowerQuery);
     }
+
+    /**
+     * Increments the version number for this secure note.
+     * 
+     * This method is used during account recovery to force client-side
+     * re-encryption of secure notes with the new master password.
+     */
+    public void incrementVersion() {
+        if (this.version == null) {
+            this.version = 1L;
+        } else {
+            this.version++;
+        }
+    }
 }
