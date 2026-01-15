@@ -14,16 +14,20 @@ import { useRouter } from 'next/navigation';
 import { loginSchema, type LoginFormData } from '@/lib/validations';
 import { authService, type AuthError } from '@/services/authService';
 import { useAuthStore } from '@/stores/authStore';
+import { BackupCodeInput } from './BackupCodeInput';
 
 export function LoginForm() {
   const router = useRouter();
   const { setUser, setSession, setLoading } = useAuthStore();
   const [apiError, setApiError] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showBackupCodeInput, setShowBackupCodeInput] = useState(false);
+  const [requires2FA, setRequires2FA] = useState(false);
 
   const {
     register,
     handleSubmit,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -55,11 +59,53 @@ export function LoginForm() {
       router.push('/vault');
     } catch (error) {
       const authError = error as AuthError;
-      setApiError(authError.message || 'Login failed. Please try again.');
+      
+      // Check if 2FA is required
+      if (authError.code === '2FA_REQUIRED') {
+        setRequires2FA(true);
+        setApiError('Please enter your 2FA code to continue.');
+      } else {
+        setApiError(authError.message || 'Login failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  const handleBackupCodeSubmit = async (backupCode: string) => {
+    try {
+      setApiError('');
+      setLoading(true);
+
+      const formData = getValues();
+      const response = await authService.login({
+        email: formData.email,
+        masterPassword: formData.masterPassword,
+        twoFactorCode: backupCode,
+        isBackupCode: true,
+      });
+
+      authService.initializeUserSession(response, formData.email);
+      router.push('/vault');
+    } catch (error) {
+      const authError = error as AuthError;
+      setApiError(authError.message || 'Invalid backup code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Show backup code input if requested
+  if (showBackupCodeInput) {
+    return (
+      <BackupCodeInput
+        onSubmit={handleBackupCodeSubmit}
+        onCancel={() => setShowBackupCodeInput(false)}
+        isLoading={isSubmitting}
+        error={apiError}
+      />
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -181,13 +227,13 @@ export function LoginForm() {
         )}
       </div>
 
-      {/* 2FA Code Field (Optional) */}
+      {/* 2FA Code Field */}
       <div>
         <label
           htmlFor="twoFactorCode"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          Two-Factor Code (Optional)
+          Two-Factor Code {requires2FA && <span className="text-red-500">*</span>}
         </label>
         <div className="mt-1">
           <input
@@ -204,6 +250,17 @@ export function LoginForm() {
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
             {errors.twoFactorCode.message}
           </p>
+        )}
+        {requires2FA && (
+          <div className="mt-2">
+            <button
+              type="button"
+              onClick={() => setShowBackupCodeInput(true)}
+              className="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400"
+            >
+              Can't access your authenticator? Use a backup code
+            </button>
+          </div>
         )}
       </div>
 

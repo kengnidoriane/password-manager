@@ -27,6 +27,7 @@ export interface LoginRequest {
   email: string;
   authKeyHash: string;
   twoFactorCode?: string;
+  isBackupCode?: boolean;
 }
 
 export interface LoginResponse {
@@ -48,6 +49,7 @@ export interface AuthCredentials {
   email: string;
   masterPassword: string;
   twoFactorCode?: string;
+  isBackupCode?: boolean;
 }
 
 /**
@@ -130,6 +132,7 @@ export class AuthService {
         email: credentials.email,
         authKeyHash,
         twoFactorCode: credentials.twoFactorCode,
+        isBackupCode: credentials.isBackupCode,
       };
 
       // Make API request
