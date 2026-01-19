@@ -10,6 +10,7 @@ import com.passwordmanager.backend.entity.Folder;
 import com.passwordmanager.backend.entity.Tag;
 import com.passwordmanager.backend.entity.UserAccount;
 import com.passwordmanager.backend.entity.VaultEntry;
+import com.passwordmanager.backend.metrics.CustomMetricsService;
 import com.passwordmanager.backend.repository.FolderRepository;
 import com.passwordmanager.backend.repository.SecureNoteRepository;
 import com.passwordmanager.backend.repository.TagRepository;
@@ -67,6 +68,7 @@ class VaultPropertyTest {
     private FolderRepository mockFolderRepository;
     private TagRepository mockTagRepository;
     private SecureNoteRepository mockSecureNoteRepository;
+    private CustomMetricsService mockCustomMetricsService;
     private VaultService vaultService;
 
     @BeforeEach
@@ -77,17 +79,19 @@ class VaultPropertyTest {
         mockFolderRepository = mock(FolderRepository.class);
         mockTagRepository = mock(TagRepository.class);
         mockSecureNoteRepository = mock(SecureNoteRepository.class);
+        mockCustomMetricsService = mock(CustomMetricsService.class);
         
         vaultService = new VaultService(
             mockVaultRepository, 
             mockUserRepository, 
             mockFolderRepository, 
             mockTagRepository, 
-            mockSecureNoteRepository
+            mockSecureNoteRepository,
+            mockCustomMetricsService
         );
         
         // Reset mocks
-        reset(mockVaultRepository, mockUserRepository, mockFolderRepository, mockTagRepository, mockSecureNoteRepository);
+        reset(mockVaultRepository, mockUserRepository, mockFolderRepository, mockTagRepository, mockSecureNoteRepository, mockCustomMetricsService);
     }
 
     /**
@@ -108,7 +112,8 @@ class VaultPropertyTest {
         FolderRepository localFolderRepository = mock(FolderRepository.class);
         TagRepository localTagRepository = mock(TagRepository.class);
         SecureNoteRepository localSecureNoteRepository = mock(SecureNoteRepository.class);
-        VaultService localVaultService = new VaultService(localVaultRepository, localUserRepository, localFolderRepository, localTagRepository, localSecureNoteRepository);
+        CustomMetricsService localCustomMetricsService = mock(CustomMetricsService.class);
+        VaultService localVaultService = new VaultService(localVaultRepository, localUserRepository, localFolderRepository, localTagRepository, localSecureNoteRepository, localCustomMetricsService);
         
         // Setup: Create test user
         UUID userId = UUID.randomUUID();
@@ -197,7 +202,8 @@ class VaultPropertyTest {
         FolderRepository localFolderRepository = mock(FolderRepository.class);
         TagRepository localTagRepository = mock(TagRepository.class);
         SecureNoteRepository localSecureNoteRepository = mock(SecureNoteRepository.class);
-        VaultService localVaultService = new VaultService(localVaultRepository, localUserRepository, localFolderRepository, localTagRepository, localSecureNoteRepository);
+        CustomMetricsService localCustomMetricsService = mock(CustomMetricsService.class);
+        VaultService localVaultService = new VaultService(localVaultRepository, localUserRepository, localFolderRepository, localTagRepository, localSecureNoteRepository, localCustomMetricsService);
         
         // Setup: Create test user
         UUID userId = UUID.randomUUID();
@@ -297,7 +303,8 @@ class VaultPropertyTest {
         FolderRepository localFolderRepository = mock(FolderRepository.class);
         TagRepository localTagRepository = mock(TagRepository.class);
         SecureNoteRepository localSecureNoteRepository = mock(SecureNoteRepository.class);
-        VaultService localVaultService = new VaultService(localVaultRepository, localUserRepository, localFolderRepository, localTagRepository, localSecureNoteRepository);
+        CustomMetricsService localCustomMetricsService = mock(CustomMetricsService.class);
+        VaultService localVaultService = new VaultService(localVaultRepository, localUserRepository, localFolderRepository, localTagRepository, localSecureNoteRepository, localCustomMetricsService);
         
         // Setup: Create test user and credential
         UUID userId = UUID.randomUUID();
@@ -463,7 +470,8 @@ class VaultPropertyTest {
         FolderRepository localFolderRepository = mock(FolderRepository.class);
         TagRepository localTagRepository = mock(TagRepository.class);
         SecureNoteRepository localSecureNoteRepository = mock(SecureNoteRepository.class);
-        VaultService localVaultService = new VaultService(localVaultRepository, localUserRepository, localFolderRepository, localTagRepository, localSecureNoteRepository);
+        CustomMetricsService localCustomMetricsService = mock(CustomMetricsService.class);
+        VaultService localVaultService = new VaultService(localVaultRepository, localUserRepository, localFolderRepository, localTagRepository, localSecureNoteRepository, localCustomMetricsService);
         
         // Setup: Create test user
         UUID userId = UUID.randomUUID();
@@ -558,7 +566,8 @@ class VaultPropertyTest {
         FolderRepository localFolderRepository = mock(FolderRepository.class);
         TagRepository localTagRepository = mock(TagRepository.class);
         SecureNoteRepository localSecureNoteRepository = mock(SecureNoteRepository.class);
-        VaultService localVaultService = new VaultService(localVaultRepository, localUserRepository, localFolderRepository, localTagRepository, localSecureNoteRepository);
+        CustomMetricsService localCustomMetricsService = mock(CustomMetricsService.class);
+        VaultService localVaultService = new VaultService(localVaultRepository, localUserRepository, localFolderRepository, localTagRepository, localSecureNoteRepository, localCustomMetricsService);
         
         // Setup: Create test user
         UUID userId = UUID.randomUUID();
@@ -656,7 +665,8 @@ class VaultPropertyTest {
         FolderRepository localFolderRepository = mock(FolderRepository.class);
         TagRepository localTagRepository = mock(TagRepository.class);
         SecureNoteRepository localSecureNoteRepository = mock(SecureNoteRepository.class);
-        VaultService localVaultService = new VaultService(localVaultRepository, localUserRepository, localFolderRepository, localTagRepository, localSecureNoteRepository);
+        CustomMetricsService localCustomMetricsService = mock(CustomMetricsService.class);
+        VaultService localVaultService = new VaultService(localVaultRepository, localUserRepository, localFolderRepository, localTagRepository, localSecureNoteRepository, localCustomMetricsService);
         
         // Setup: Create test user
         UUID userId = UUID.randomUUID();

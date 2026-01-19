@@ -212,4 +212,21 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
      * @return True if suspicious activity exists
      */
     boolean existsByUserAndSuccessFalseAndTimestampAfter(UserAccount user, LocalDateTime since);
+
+    /**
+     * Count audit logs by action type after a specific timestamp.
+     * 
+     * @param action Action type
+     * @param since Start of time window
+     * @return Count of audit logs
+     */
+    long countByActionAndTimestampAfter(AuditAction action, LocalDateTime since);
+
+    /**
+     * Count audit logs after a specific timestamp.
+     * 
+     * @param since Start of time window
+     * @return Count of audit logs
+     */
+    long countByTimestampAfter(LocalDateTime since);
 }

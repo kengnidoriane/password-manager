@@ -57,6 +57,19 @@ public class JwtUtil {
     }
 
     /**
+     * Generates a JWT token with user ID included.
+     * 
+     * @param userDetails User details
+     * @param userId User ID to include in token
+     * @return Generated JWT token
+     */
+    public String generateToken(UserDetails userDetails, String userId) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", userId);
+        return createToken(claims, userDetails.getUsername());
+    }
+
+    /**
      * Generates a JWT token with custom claims.
      * 
      * @param extraClaims Additional claims to include in the token
@@ -95,6 +108,16 @@ public class JwtUtil {
      */
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
+    }
+
+    /**
+     * Extracts the user ID from a JWT token.
+     * 
+     * @param token JWT token
+     * @return User ID from the token
+     */
+    public String extractUserId(String token) {
+        return extractClaim(token, claims -> claims.get("userId", String.class));
     }
 
     /**

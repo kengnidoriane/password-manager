@@ -178,4 +178,24 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
     @Query("SELECT CASE WHEN COUNT(s) > 0 THEN true ELSE false END FROM Session s " +
            "WHERE s.sessionToken = :sessionToken AND s.isActive = true AND s.expiresAt > :currentTime")
     boolean existsValidSession(@Param("sessionToken") String sessionToken, @Param("currentTime") LocalDateTime currentTime);
+
+    /**
+     * Counts active sessions that expire after the given time.
+     * 
+     * Used for metrics to track currently active sessions.
+     * 
+     * @param currentTime The current timestamp
+     * @return Count of active sessions
+     */
+    @Query("SELECT COUNT(s) FROM Session s WHERE s.isActive = true AND s.expiresAt > :currentTime")
+    long countByExpiresAtAfter(@Param("currentTime") LocalDateTime currentTime);
+
+    /**
+     * Counts sessions created after a specific date.
+     * 
+     * @param date the date to search from
+     * @return count of sessions created after the specified date
+     */
+    @Query("SELECT COUNT(s) FROM Session s WHERE s.createdAt > :date")
+    long countByCreatedAtAfter(@Param("date") LocalDateTime date);
 }

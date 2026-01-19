@@ -1,6 +1,7 @@
 package com.passwordmanager.backend.service;
 
 import com.passwordmanager.backend.entity.UserAccount;
+import com.passwordmanager.backend.metrics.CustomMetricsService;
 import com.passwordmanager.backend.repository.UserRepository;
 import com.passwordmanager.backend.service.TwoFactorService;
 import com.passwordmanager.backend.util.JwtUtil;
@@ -232,9 +233,10 @@ class AuthenticationPropertyTest {
         when(mockRedisTemplate.opsForValue()).thenReturn(mockValueOps);
         when(mockRedisTemplate.hasKey(anyString())).thenReturn(false);
         
+        CustomMetricsService mockCustomMetricsService = mock(CustomMetricsService.class);
         AuthenticationService testAuthService = new AuthenticationService(
             mockUserRepository, mockRedisTemplate, passwordEncoder, mockAuditLogService,
-            mockVaultService, mockEmailService, mockSessionService);
+            mockVaultService, mockEmailService, mockSessionService, mockCustomMetricsService);
 
         // Setup: Create a user
         UserAccount user = createTestUser(credentials.email, credentials.correctPasswordHash);
@@ -461,7 +463,10 @@ class AuthenticationPropertyTest {
         VaultService mockVaultService = mock(VaultService.class);
         EmailService mockEmailService = mock(EmailService.class);
         SessionService mockSessionService = mock(SessionService.class);
-        AuthenticationService testAuthService = new AuthenticationService(mockUserRepository, mockRedisTemplate, passwordEncoder, mockAuditLogService, mockVaultService, mockEmailService, mockSessionService);
+        CustomMetricsService mockCustomMetricsService = mock(CustomMetricsService.class);
+        AuthenticationService testAuthService = new AuthenticationService(
+            mockUserRepository, mockRedisTemplate, passwordEncoder, mockAuditLogService,
+            mockVaultService, mockEmailService, mockSessionService, mockCustomMetricsService);
         
         // Setup: Mock repository to allow registration
         when(mockUserRepository.findByEmail(registerRequest.getEmail())).thenReturn(Optional.empty());
@@ -534,7 +539,8 @@ class AuthenticationPropertyTest {
         VaultService mockVaultService = mock(VaultService.class);
         EmailService mockEmailService = mock(EmailService.class);
         SessionService mockSessionService = mock(SessionService.class);
-        AuthenticationService testAuthService = new AuthenticationService(mockUserRepository, mockRedisTemplate, passwordEncoder, mockAuditLogService, mockVaultService, mockEmailService, mockSessionService);
+        CustomMetricsService mockCustomMetricsService = mock(CustomMetricsService.class);
+        AuthenticationService testAuthService = new AuthenticationService(mockUserRepository, mockRedisTemplate, passwordEncoder, mockAuditLogService, mockVaultService, mockEmailService, mockSessionService, mockCustomMetricsService);
         
         // Setup: Create a user with a recovery key
         String validRecoveryKey = "ABCDEF-123456-GHIJKL-789012-MNOPQR-345678-STUVWX-901234";
@@ -702,7 +708,8 @@ class AuthenticationPropertyTest {
         VaultService mockVaultService = mock(VaultService.class);
         EmailService mockEmailService = mock(EmailService.class);
         SessionService mockSessionService = mock(SessionService.class);
-        AuthenticationService testAuthService = new AuthenticationService(mockUserRepository, mockRedisTemplate, passwordEncoder, mockAuditLogService, mockVaultService, mockEmailService, mockSessionService);
+        CustomMetricsService mockCustomMetricsService = mock(CustomMetricsService.class);
+        AuthenticationService testAuthService = new AuthenticationService(mockUserRepository, mockRedisTemplate, passwordEncoder, mockAuditLogService, mockVaultService, mockEmailService, mockSessionService, mockCustomMetricsService);
         
         // Setup: Create a user with a recovery key and some vault data
         String originalRecoveryKey = "ABCDEF-123456-GHIJKL-789012-MNOPQR-345678-STUVWX-901234";
@@ -797,7 +804,8 @@ class AuthenticationPropertyTest {
         VaultService mockVaultService = mock(VaultService.class);
         EmailService mockEmailService = mock(EmailService.class);
         SessionService mockSessionService = mock(SessionService.class);
-        AuthenticationService testAuthService = new AuthenticationService(mockUserRepository, mockRedisTemplate, passwordEncoder, mockAuditLogService, mockVaultService, mockEmailService, mockSessionService);
+        CustomMetricsService mockCustomMetricsService = mock(CustomMetricsService.class);
+        AuthenticationService testAuthService = new AuthenticationService(mockUserRepository, mockRedisTemplate, passwordEncoder, mockAuditLogService, mockVaultService, mockEmailService, mockSessionService, mockCustomMetricsService);
         
         // Setup: Create a user with an initial recovery key
         String initialRecoveryKey = "INITIAL-123456-ABCDEF-789012-GHIJKL-345678-MNOPQR-901234";
