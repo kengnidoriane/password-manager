@@ -460,4 +460,96 @@ public class AuditLogService {
             LOGGER.error("Failed to log share update: {}", e.getMessage());
         }
     }
+
+    // Settings-related audit log methods
+
+    /**
+     * Logs when user settings are created.
+     * 
+     * @param userId ID of the user
+     * @param settings The created settings
+     */
+    public void logSettingsCreation(UUID userId, com.passwordmanager.backend.entity.UserSettings settings) {
+        try {
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("session_timeout_minutes", settings.getSessionTimeoutMinutes());
+            metadata.put("clipboard_timeout_seconds", settings.getClipboardTimeoutSeconds());
+            metadata.put("biometric_enabled", settings.getBiometricEnabled());
+            metadata.put("strict_security_mode", settings.getStrictSecurityMode());
+            metadata.put("theme", settings.getTheme());
+            metadata.put("language", settings.getLanguage());
+            
+            LOGGER.info("AUDIT: Settings created for user: {}", userId);
+        } catch (Exception e) {
+            LOGGER.error("Failed to log settings creation: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Logs when user settings are changed.
+     * 
+     * @param userId ID of the user
+     * @param previousSettings The previous settings values
+     * @param newSettings The new settings values
+     */
+    public void logSettingsChange(UUID userId, com.passwordmanager.backend.entity.UserSettings previousSettings, 
+                                 com.passwordmanager.backend.entity.UserSettings newSettings) {
+        try {
+            Map<String, Object> metadata = new HashMap<>();
+            
+            // Log changes
+            if (!previousSettings.getSessionTimeoutMinutes().equals(newSettings.getSessionTimeoutMinutes())) {
+                metadata.put("session_timeout_changed", true);
+                metadata.put("session_timeout_old", previousSettings.getSessionTimeoutMinutes());
+                metadata.put("session_timeout_new", newSettings.getSessionTimeoutMinutes());
+            }
+            
+            if (!previousSettings.getClipboardTimeoutSeconds().equals(newSettings.getClipboardTimeoutSeconds())) {
+                metadata.put("clipboard_timeout_changed", true);
+                metadata.put("clipboard_timeout_old", previousSettings.getClipboardTimeoutSeconds());
+                metadata.put("clipboard_timeout_new", newSettings.getClipboardTimeoutSeconds());
+            }
+            
+            if (!previousSettings.getBiometricEnabled().equals(newSettings.getBiometricEnabled())) {
+                metadata.put("biometric_changed", true);
+                metadata.put("biometric_old", previousSettings.getBiometricEnabled());
+                metadata.put("biometric_new", newSettings.getBiometricEnabled());
+            }
+            
+            if (!previousSettings.getStrictSecurityMode().equals(newSettings.getStrictSecurityMode())) {
+                metadata.put("strict_security_changed", true);
+                metadata.put("strict_security_old", previousSettings.getStrictSecurityMode());
+                metadata.put("strict_security_new", newSettings.getStrictSecurityMode());
+            }
+            
+            if (!previousSettings.getTheme().equals(newSettings.getTheme())) {
+                metadata.put("theme_changed", true);
+                metadata.put("theme_old", previousSettings.getTheme());
+                metadata.put("theme_new", newSettings.getTheme());
+            }
+            
+            if (!previousSettings.getLanguage().equals(newSettings.getLanguage())) {
+                metadata.put("language_changed", true);
+                metadata.put("language_old", previousSettings.getLanguage());
+                metadata.put("language_new", newSettings.getLanguage());
+            }
+            
+            LOGGER.info("AUDIT: Settings changed for user: {} - changes: {}", userId, metadata.keySet());
+        } catch (Exception e) {
+            LOGGER.error("Failed to log settings change: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Logs when user settings are deleted.
+     * 
+     * @param userId ID of the user
+     */
+    public void logSettingsDeletion(UUID userId) {
+        try {
+            LOGGER.info("AUDIT: Settings deleted for user: {}", userId);
+        } catch (Exception e) {
+            LOGGER.error("Failed to log settings deletion: {}", e.getMessage());
+        }
+    }
 }

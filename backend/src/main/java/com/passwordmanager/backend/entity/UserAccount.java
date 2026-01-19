@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Min;
@@ -159,6 +160,15 @@ public class UserAccount {
     private List<BackupCode> backupCodes = new ArrayList<>();
 
     /**
+     * User-specific settings and preferences.
+     * 
+     * Contains configurable options like session timeout, clipboard timeout,
+     * biometric authentication, and UI preferences.
+     */
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private UserSettings settings;
+
+    /**
      * Updates the last login timestamp to the current time.
      * 
      * Should be called after successful authentication.
@@ -232,5 +242,29 @@ public class UserAccount {
      */
     public void clearBackupCodes() {
         backupCodes.clear();
+    }
+
+    /**
+     * Gets the user settings, creating default settings if none exist.
+     * 
+     * @return the user settings
+     */
+    public UserSettings getSettings() {
+        if (settings == null) {
+            settings = UserSettings.createDefault(this);
+        }
+        return settings;
+    }
+
+    /**
+     * Sets the user settings.
+     * 
+     * @param settings the settings to set
+     */
+    public void setSettings(UserSettings settings) {
+        this.settings = settings;
+        if (settings != null) {
+            settings.setUser(this);
+        }
     }
 }
