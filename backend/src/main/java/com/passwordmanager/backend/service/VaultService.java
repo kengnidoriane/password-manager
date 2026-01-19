@@ -13,11 +13,13 @@ import com.passwordmanager.backend.entity.SecureNote;
 import com.passwordmanager.backend.entity.Tag;
 import com.passwordmanager.backend.entity.UserAccount;
 import com.passwordmanager.backend.entity.VaultEntry;
+import com.passwordmanager.backend.metrics.CustomMetricsService;
 import com.passwordmanager.backend.repository.FolderRepository;
 import com.passwordmanager.backend.repository.SecureNoteRepository;
 import com.passwordmanager.backend.repository.TagRepository;
 import com.passwordmanager.backend.repository.UserRepository;
 import com.passwordmanager.backend.repository.VaultRepository;
+import io.micrometer.core.instrument.Timer;
 import jakarta.persistence.OptimisticLockException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,17 +56,20 @@ public class VaultService {
     private final FolderRepository folderRepository;
     private final TagRepository tagRepository;
     private final SecureNoteRepository secureNoteRepository;
+    private final CustomMetricsService metricsService;
 
     public VaultService(VaultRepository vaultRepository,
                        UserRepository userRepository,
                        FolderRepository folderRepository,
                        TagRepository tagRepository,
-                       SecureNoteRepository secureNoteRepository) {
+                       SecureNoteRepository secureNoteRepository,
+                       CustomMetricsService metricsService) {
         this.vaultRepository = vaultRepository;
         this.userRepository = userRepository;
         this.folderRepository = folderRepository;
         this.tagRepository = tagRepository;
         this.secureNoteRepository = secureNoteRepository;
+        this.metricsService = metricsService;
     }
 
     /**
@@ -76,22 +81,32 @@ public class VaultService {
      */
     @Transactional(readOnly = true)
     public List<CredentialResponse> getAllCredentials(UUID userId) {
+        Timer.Sample sample = metricsService.startVaultOperationTimer();
         logger.debug("Retrieving all credentials for user: {}", userId);
 
-        // Verify user exists
-        if (!userRepository.existsById(userId)) {
-            throw new IllegalArgumentException("User not found: " + userId);
+        try {
+            // Verify user exists
+            if (!userRepository.existsById(userId)) {
+                throw new IllegalArgumentException("User not found: " + userId);
+            }
+
+            List<VaultEntry> entries = vaultRepository.findActiveCredentialsByUserId(userId);
+            
+            List<CredentialResponse> responses = entries.stream()
+                    .map(CredentialResponse::fromEntity)
+                    .collect(Collectors.toList());
+
+            logger.debug("Retrieved {} credentials for user: {}", responses.size(), userId);
+            
+            // Record metrics
+            metricsService.recordVaultRead("getAllCredentials");
+            metricsService.recordVaultOperationTime(sample, "getAllCredentials");
+            
+            return responses;
+        } catch (Exception e) {
+            metricsService.recordVaultOperationTime(sample, "getAllCredentials");
+            throw e;
         }
-
-        List<VaultEntry> entries = vaultRepository.findActiveCredentialsByUserId(userId);
-        
-        List<CredentialResponse> responses = entries.stream()
-                .map(CredentialResponse::fromEntity)
-                .collect(Collectors.toList());
-
-        logger.debug("Retrieved {} credentials for user: {}", responses.size(), userId);
-        
-        return responses;
     }
 
     /**
@@ -103,38 +118,48 @@ public class VaultService {
      * @throws IllegalArgumentException if validation fails
      */
     public CredentialResponse createCredential(UUID userId, CredentialRequest request) {
+        Timer.Sample sample = metricsService.startVaultOperationTimer();
         logger.debug("Creating credential for user: {}", userId);
 
-        // Validate request
-        validateCredentialRequest(request, false);
+        try {
+            // Validate request
+            validateCredentialRequest(request, false);
 
-        // Get user
-        UserAccount user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+            // Get user
+            UserAccount user = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
 
-        // Validate folder if specified
-        Folder folder = null;
-        if (request.getFolderId() != null) {
-            folder = folderRepository.findByIdAndUserId(request.getFolderId(), userId)
-                    .orElseThrow(() -> new IllegalArgumentException("Folder not found: " + request.getFolderId()));
+            // Validate folder if specified
+            Folder folder = null;
+            if (request.getFolderId() != null) {
+                folder = folderRepository.findByIdAndUserId(request.getFolderId(), userId)
+                        .orElseThrow(() -> new IllegalArgumentException("Folder not found: " + request.getFolderId()));
+            }
+
+            // Create vault entry
+            VaultEntry entry = VaultEntry.builder()
+                    .user(user)
+                    .encryptedData(request.getEncryptedData())
+                    .iv(request.getIv())
+                    .authTag(request.getAuthTag())
+                    .entryType(VaultEntry.EntryType.CREDENTIAL)
+                    .folder(folder)
+                    .version(1L)
+                    .build();
+
+            VaultEntry savedEntry = vaultRepository.save(entry);
+            
+            logger.info("Created credential {} for user: {}", savedEntry.getId(), userId);
+            
+            // Record metrics
+            metricsService.recordVaultWrite("createCredential");
+            metricsService.recordVaultOperationTime(sample, "createCredential");
+            
+            return CredentialResponse.fromEntity(savedEntry);
+        } catch (Exception e) {
+            metricsService.recordVaultOperationTime(sample, "createCredential");
+            throw e;
         }
-
-        // Create vault entry
-        VaultEntry entry = VaultEntry.builder()
-                .user(user)
-                .encryptedData(request.getEncryptedData())
-                .iv(request.getIv())
-                .authTag(request.getAuthTag())
-                .entryType(VaultEntry.EntryType.CREDENTIAL)
-                .folder(folder)
-                .version(1L)
-                .build();
-
-        VaultEntry savedEntry = vaultRepository.save(entry);
-        
-        logger.info("Created credential {} for user: {}", savedEntry.getId(), userId);
-        
-        return CredentialResponse.fromEntity(savedEntry);
     }
 
     /**

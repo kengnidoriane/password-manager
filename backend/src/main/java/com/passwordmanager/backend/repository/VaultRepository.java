@@ -350,4 +350,23 @@ public interface VaultRepository extends JpaRepository<VaultEntry, UUID> {
     @Query("SELECT v.id FROM VaultEntry v WHERE v.user.id = :userId AND v.entryType = 'CREDENTIAL' " +
            "AND v.deletedAt IS NOT NULL AND v.deletedAt > :since")
     List<UUID> findDeletedCredentialIdsByUserIdSince(@Param("userId") UUID userId, @Param("since") LocalDateTime since);
+
+    /**
+     * Counts all active (non-deleted) vault entries across all users.
+     * 
+     * Used for metrics to track total credentials in the system.
+     * 
+     * @return count of active entries
+     */
+    @Query("SELECT COUNT(v) FROM VaultEntry v WHERE v.deletedAt IS NULL")
+    long countByDeletedAtIsNull();
+
+    /**
+     * Counts entries created after a specific date.
+     * 
+     * @param date the date to search from
+     * @return count of entries created after the specified date
+     */
+    @Query("SELECT COUNT(v) FROM VaultEntry v WHERE v.createdAt > :date")
+    long countByCreatedAtAfter(@Param("date") LocalDateTime date);
 }

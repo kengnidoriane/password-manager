@@ -114,6 +114,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                     
+                    // Add user ID to MDC for logging
+                    String userId = jwtUtil.extractUserId(jwt);
+                    if (userId != null) {
+                        CorrelationIdFilter.setUserId(userId);
+                    }
+                    
                     logger.debug("User '{}' authenticated successfully", username);
                 } else {
                     logger.debug("JWT token validation failed for user '{}'", username);

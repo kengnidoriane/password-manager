@@ -113,6 +113,14 @@ public interface UserRepository extends JpaRepository<UserAccount, UUID> {
     long countByEmailVerifiedTrue();
 
     /**
+     * Counts the number of users who have logged in after a specific date.
+     * 
+     * @param date The date to search from
+     * @return Count of users who logged in after the specified date
+     */
+    long countByLastLoginAtAfter(LocalDateTime date);
+
+    /**
      * Finds users by email domain.
      * 
      * Useful for organizational analytics or identifying corporate accounts.

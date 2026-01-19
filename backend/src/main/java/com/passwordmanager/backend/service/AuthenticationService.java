@@ -5,7 +5,10 @@ import com.passwordmanager.backend.dto.RecoveryResponse;
 import com.passwordmanager.backend.dto.RegisterRequest;
 import com.passwordmanager.backend.dto.RegisterResponse;
 import com.passwordmanager.backend.entity.UserAccount;
+import com.passwordmanager.backend.filter.CorrelationIdFilter;
+import com.passwordmanager.backend.metrics.CustomMetricsService;
 import com.passwordmanager.backend.repository.UserRepository;
+import io.micrometer.core.instrument.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -55,6 +58,7 @@ public class AuthenticationService {
     private final VaultService vaultService;
     private final EmailService emailService;
     private final SessionService sessionService;
+    private final CustomMetricsService metricsService;
 
     public AuthenticationService(UserRepository userRepository,
                                RedisTemplate<String, Object> redisTemplate,
@@ -62,7 +66,8 @@ public class AuthenticationService {
                                AuditLogService auditLogService,
                                VaultService vaultService,
                                EmailService emailService,
-                               SessionService sessionService) {
+                               SessionService sessionService,
+                               CustomMetricsService metricsService) {
         this.userRepository = userRepository;
         this.redisTemplate = redisTemplate;
         this.passwordEncoder = passwordEncoder;
@@ -71,6 +76,7 @@ public class AuthenticationService {
         this.vaultService = vaultService;
         this.emailService = emailService;
         this.sessionService = sessionService;
+        this.metricsService = metricsService;
     }
 
     /**
@@ -102,6 +108,10 @@ public class AuthenticationService {
      * @param reason Failure reason
      */
     public void recordFailedLogin(String email, String ipAddress, String userAgent, String reason) {
+        // Record metrics
+        metricsService.recordLoginAttempt();
+        metricsService.recordLoginFailure(reason);
+        
         String attemptsKey = FAILED_ATTEMPTS_KEY_PREFIX + email + ":" + ipAddress;
         String lockoutKey = LOCKOUT_KEY_PREFIX + email + ":" + ipAddress;
 
@@ -154,6 +164,10 @@ public class AuthenticationService {
      * @param userAgent User agent string
      */
     public void recordSuccessfulLogin(String email, String ipAddress, String userAgent) {
+        // Record metrics
+        metricsService.recordLoginAttempt();
+        metricsService.recordLoginSuccess();
+        
         String attemptsKey = FAILED_ATTEMPTS_KEY_PREFIX + email + ":" + ipAddress;
         String lockoutKey = LOCKOUT_KEY_PREFIX + email + ":" + ipAddress;
 
@@ -279,6 +293,7 @@ public class AuthenticationService {
      * @throws IllegalArgumentException if email is already registered
      */
     public RegisterResponse registerUser(RegisterRequest registerRequest) {
+        Timer.Sample sample = metricsService.startAuthenticationTimer();
         logger.info("Attempting to register new user with email: {}", registerRequest.getEmail());
 
         try {
@@ -308,6 +323,10 @@ public class AuthenticationService {
 
             logger.info("Successfully registered new user with ID: {} and email: {}", 
                        savedUser.getId(), savedUser.getEmail());
+
+            // Record metrics
+            metricsService.recordRegistration();
+            metricsService.recordAuthenticationTime(sample, "registration");
 
             // Return response with recovery key (displayed once)
             return RegisterResponse.builder()
