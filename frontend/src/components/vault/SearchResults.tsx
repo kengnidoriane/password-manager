@@ -16,6 +16,7 @@ import { Credential, SecureNote } from '@/lib/db';
 interface SearchResultsProps {
   onCredentialSelect?: (credentialId: string) => void;
   onCredentialEdit?: (credentialId: string) => void;
+  onCredentialShare?: (credentialId: string) => void;
   onNoteSelect?: (noteId: string) => void;
   onNoteEdit?: (noteId: string) => void;
   selectedCredentialId?: string;
@@ -25,6 +26,7 @@ interface SearchResultsProps {
 export function SearchResults({
   onCredentialSelect,
   onCredentialEdit,
+  onCredentialShare,
   onNoteSelect,
   onNoteEdit,
   selectedCredentialId,
@@ -138,6 +140,7 @@ export function SearchResults({
                 isSelected={selectedCredentialId === result.item.id}
                 onSelect={() => onCredentialSelect?.(result.item.id)}
                 onEdit={() => onCredentialEdit?.(result.item.id)}
+                onShare={() => onCredentialShare?.(result.item.id)}
                 folders={folders}
                 tags={tags}
                 highlightText={highlightText}
@@ -184,6 +187,7 @@ interface SearchResultCredentialCardProps {
   isSelected: boolean;
   onSelect: () => void;
   onEdit: () => void;
+  onShare: () => void;
   folders: any[];
   tags: any[];
   highlightText: (text: string) => string;
@@ -194,6 +198,7 @@ function SearchResultCredentialCard({
   isSelected,
   onSelect,
   onEdit,
+  onShare,
   folders,
   tags,
   highlightText
@@ -247,6 +252,12 @@ function SearchResultCredentialCard({
             className="rounded-md bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             View
+          </button>
+          <button
+            onClick={onShare}
+            className="rounded-md border border-gray-300 px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            Share
           </button>
           <button
             onClick={onEdit}

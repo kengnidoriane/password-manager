@@ -1,7 +1,7 @@
  'use client';
 
 import { useState } from 'react';
-import { VaultList, CredentialForm, FolderTree, TagManager, SecureNoteList, SecureNoteForm } from '@/components/vault';
+import { VaultList, CredentialForm, FolderTree, TagManager, SecureNoteList, SecureNoteForm, ShareDialog, SharedWithMe } from '@/components/vault';
 import { useVault } from '@/hooks/useVault';
 import { CredentialFormData } from '@/lib/validations';
 import { SecureNote } from '@/lib/db';
@@ -22,13 +22,14 @@ export default function VaultPage() {
     setSelectedTags 
   } = useVault();
   
-  const [activeView, setActiveView] = useState<'credentials' | 'notes'>('credentials');
+  const [activeView, setActiveView] = useState<'credentials' | 'notes' | 'shared'>('credentials');
   const [selectedCredentialId, setSelectedCredentialId] = useState<string | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [editingCredentialId, setEditingCredentialId] = useState<string | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState(true);
+  const [shareDialogCredentialId, setShareDialogCredentialId] = useState<string | null>(null);
 
   const handleCreateCredential = async (data: CredentialFormData) => {
     try {
@@ -89,6 +90,14 @@ export default function VaultPage() {
     setIsCreating(false);
   };
 
+  const handleCredentialShare = (credentialId: string) => {
+    setShareDialogCredentialId(credentialId);
+  };
+
+  const handleShareDialogClose = () => {
+    setShareDialogCredentialId(null);
+  };
+
   const handleNoteSelect = (noteId: string) => {
     setSelectedNoteId(noteId);
     setSelectedCredentialId(null);
@@ -132,6 +141,15 @@ export default function VaultPage() {
     setActiveView('notes');
     setSelectedCredentialId(null);
     setEditingCredentialId(null);
+  };
+
+  const switchToShared = () => {
+    setActiveView('shared');
+    setSelectedCredentialId(null);
+    setSelectedNoteId(null);
+    setEditingCredentialId(null);
+    setEditingNoteId(null);
+    setIsCreating(false);
   };
 
   return (
@@ -203,12 +221,15 @@ export default function VaultPage() {
               )}
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {activeView === 'credentials' ? 'Password Vault' : 'Secure Notes'}
+                  {activeView === 'credentials' ? 'Password Vault' : 
+                   activeView === 'notes' ? 'Secure Notes' : 'Shared with Me'}
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400">
                   {activeView === 'credentials' 
                     ? 'Manage your secure credentials' 
-                    : 'Store and organize your secure notes'
+                    : activeView === 'notes'
+                    ? 'Store and organize your secure notes'
+                    : 'Credentials shared by other users'
                   }
                 </p>
               </div>
@@ -232,7 +253,7 @@ export default function VaultPage() {
                 </button>
                 <button
                   onClick={switchToNotes}
-                  className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-r-lg transition-colors ${
+                  className={`flex items-center gap-2 px-3 py-2 text-sm font-medium transition-colors ${
                     activeView === 'notes'
                       ? 'bg-blue-600 text-white'
                       : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
@@ -243,15 +264,30 @@ export default function VaultPage() {
                   </svg>
                   Notes
                 </button>
+                <button
+                  onClick={switchToShared}
+                  className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-r-lg transition-colors ${
+                    activeView === 'shared'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                  </svg>
+                  Shared
+                </button>
               </div>
 
-              {/* Add Button */}
-              <button
-                onClick={startCreating}
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                {activeView === 'credentials' ? 'Add Credential' : 'Add Note'}
-              </button>
+              {/* Add Button - only show for credentials and notes */}
+              {activeView !== 'shared' && (
+                <button
+                  onClick={startCreating}
+                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                  {activeView === 'credentials' ? 'Add Credential' : 'Add Note'}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -283,18 +319,34 @@ export default function VaultPage() {
                   selectedCredentialId={selectedCredentialId || undefined}
                   onCredentialSelect={handleCredentialSelect}
                   onCredentialEdit={handleCredentialEdit}
+                  onCredentialShare={handleCredentialShare}
                 />
-              ) : (
+              ) : activeView === 'notes' ? (
                 <SecureNoteList
                   selectedNoteId={selectedNoteId || undefined}
                   onNoteSelect={handleNoteSelect}
                   onNoteEdit={handleNoteEdit}
                 />
+              ) : (
+                <SharedWithMe />
               )}
             </div>
           )}
         </div>
       </div>
+
+      {/* Share Dialog */}
+      {shareDialogCredentialId && (
+        <ShareDialog
+          credential={credentials.find(c => c.id === shareDialogCredentialId)!}
+          isOpen={true}
+          onClose={handleShareDialogClose}
+          onShare={(shareResponse) => {
+            console.log('Credential shared:', shareResponse);
+            // You could show a success notification here
+          }}
+        />
+      )}
     </div>
   );
 }

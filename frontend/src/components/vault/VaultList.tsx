@@ -17,12 +17,14 @@ import { SearchResults } from './SearchResults';
 interface VaultListProps {
   onCredentialSelect?: (credentialId: string) => void;
   onCredentialEdit?: (credentialId: string) => void;
+  onCredentialShare?: (credentialId: string) => void;
   selectedCredentialId?: string;
 }
 
 export function VaultList({ 
   onCredentialSelect, 
   onCredentialEdit, 
+  onCredentialShare,
   selectedCredentialId 
 }: VaultListProps) {
   const { 
@@ -310,6 +312,7 @@ export function VaultList({
                   isSelected={selectedCredentialId === credential.id}
                   onSelect={() => onCredentialSelect?.(credential.id)}
                   onEdit={() => onCredentialEdit?.(credential.id)}
+                  onShare={() => onCredentialShare?.(credential.id)}
                   folders={folders}
                   tags={tags}
                 />
