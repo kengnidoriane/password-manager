@@ -13,3 +13,6 @@ export { SecureNoteList } from './SecureNoteList';
 export { SecureNoteForm } from './SecureNoteForm';
 export { SearchBar } from './SearchBar';
 export { SearchResults } from './SearchResults';
+export { ExportDialog } from './ExportDialog';
+export { ImportDialog } from './ImportDialog';
+export { ImportExportManager } from './ImportExportManager';

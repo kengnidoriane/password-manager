@@ -11,6 +11,8 @@ export interface User {
   id: string;
   email: string;
   createdAt: string;
+  salt?: string; // Base64 encoded salt for PBKDF2
+  iterations?: number; // PBKDF2 iterations
 }
 
 export interface Session {
