@@ -370,4 +370,94 @@ public class AuditLogService {
         LOGGER.warn("AUDIT: Rate limit exceeded for {} from {} - type: {}, remaining: {}s", 
                    email != null ? email : "IP", ipAddress, eventType, remainingTime);
     }
+
+    // Sharing-related audit log methods
+
+    /**
+     * Logs when a credential is shared with another user.
+     * 
+     * @param ownerId ID of the user sharing the credential
+     * @param recipientId ID of the user receiving the shared credential
+     * @param vaultEntryId ID of the credential being shared
+     * @param shareId ID of the created share
+     */
+    public void logShareCreated(UUID ownerId, UUID recipientId, UUID vaultEntryId, UUID shareId) {
+        try {
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("recipient_id", recipientId.toString());
+            metadata.put("vault_entry_id", vaultEntryId.toString());
+            metadata.put("share_id", shareId.toString());
+            
+            // We need to get the user account for proper logging
+            // For now, we'll log with minimal information
+            LOGGER.info("AUDIT: Credential shared - Owner: {}, Recipient: {}, Credential: {}, Share: {}", 
+                       ownerId, recipientId, vaultEntryId, shareId);
+        } catch (Exception e) {
+            LOGGER.error("Failed to log share creation: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Logs when a shared credential is accessed by the recipient.
+     * 
+     * @param recipientId ID of the user accessing the shared credential
+     * @param shareId ID of the shared credential
+     * @param vaultEntryId ID of the original credential
+     */
+    public void logShareAccess(UUID recipientId, UUID shareId, UUID vaultEntryId) {
+        try {
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("share_id", shareId.toString());
+            metadata.put("vault_entry_id", vaultEntryId.toString());
+            
+            LOGGER.info("AUDIT: Shared credential accessed - Recipient: {}, Share: {}, Credential: {}", 
+                       recipientId, shareId, vaultEntryId);
+        } catch (Exception e) {
+            LOGGER.error("Failed to log share access: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Logs when access to a shared credential is revoked.
+     * 
+     * @param ownerId ID of the user revoking access
+     * @param recipientId ID of the user losing access
+     * @param vaultEntryId ID of the credential
+     * @param shareId ID of the revoked share
+     */
+    public void logShareRevoked(UUID ownerId, UUID recipientId, UUID vaultEntryId, UUID shareId) {
+        try {
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("recipient_id", recipientId.toString());
+            metadata.put("vault_entry_id", vaultEntryId.toString());
+            metadata.put("share_id", shareId.toString());
+            
+            LOGGER.info("AUDIT: Share revoked - Owner: {}, Recipient: {}, Credential: {}, Share: {}", 
+                       ownerId, recipientId, vaultEntryId, shareId);
+        } catch (Exception e) {
+            LOGGER.error("Failed to log share revocation: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Logs when a shared credential is updated.
+     * 
+     * @param ownerId ID of the owner updating the credential
+     * @param recipientId ID of the recipient affected by the update
+     * @param vaultEntryId ID of the updated credential
+     * @param shareId ID of the affected share
+     */
+    public void logShareUpdated(UUID ownerId, UUID recipientId, UUID vaultEntryId, UUID shareId) {
+        try {
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("recipient_id", recipientId.toString());
+            metadata.put("vault_entry_id", vaultEntryId.toString());
+            metadata.put("share_id", shareId.toString());
+            
+            LOGGER.info("AUDIT: Shared credential updated - Owner: {}, Recipient: {}, Credential: {}, Share: {}", 
+                       ownerId, recipientId, vaultEntryId, shareId);
+        } catch (Exception e) {
+            LOGGER.error("Failed to log share update: {}", e.getMessage());
+        }
+    }
 }
