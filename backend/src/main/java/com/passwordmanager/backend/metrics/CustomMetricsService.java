@@ -244,6 +244,26 @@ public class CustomMetricsService {
                 .increment();
     }
 
+    public void recordImportOperation(String format, int imported, int errors) {
+        Counter.builder("vault.import.operations")
+                .description("Number of vault import operations")
+                .tag("format", format)
+                .register(meterRegistry)
+                .increment();
+        
+        Counter.builder("vault.import.entries.imported")
+                .description("Number of entries successfully imported")
+                .tag("format", format)
+                .register(meterRegistry)
+                .increment(imported);
+        
+        Counter.builder("vault.import.entries.errors")
+                .description("Number of entries with import errors")
+                .tag("format", format)
+                .register(meterRegistry)
+                .increment(errors);
+    }
+
     // Gauge update methods
     public void updateActiveSessionsCount(long count) {
         activeSessionsGauge.set(count);

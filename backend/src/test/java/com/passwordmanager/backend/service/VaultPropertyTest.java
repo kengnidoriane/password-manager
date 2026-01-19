@@ -69,6 +69,7 @@ class VaultPropertyTest {
     private TagRepository mockTagRepository;
     private SecureNoteRepository mockSecureNoteRepository;
     private CustomMetricsService mockCustomMetricsService;
+    private AuditLogService mockAuditLogService;
     private VaultService vaultService;
 
     @BeforeEach
@@ -80,6 +81,7 @@ class VaultPropertyTest {
         mockTagRepository = mock(TagRepository.class);
         mockSecureNoteRepository = mock(SecureNoteRepository.class);
         mockCustomMetricsService = mock(CustomMetricsService.class);
+        mockAuditLogService = mock(AuditLogService.class);
         
         vaultService = new VaultService(
             mockVaultRepository, 
@@ -87,7 +89,8 @@ class VaultPropertyTest {
             mockFolderRepository, 
             mockTagRepository, 
             mockSecureNoteRepository,
-            mockCustomMetricsService
+            mockCustomMetricsService,
+            mockAuditLogService
         );
         
         // Reset mocks
@@ -113,7 +116,8 @@ class VaultPropertyTest {
         TagRepository localTagRepository = mock(TagRepository.class);
         SecureNoteRepository localSecureNoteRepository = mock(SecureNoteRepository.class);
         CustomMetricsService localCustomMetricsService = mock(CustomMetricsService.class);
-        VaultService localVaultService = new VaultService(localVaultRepository, localUserRepository, localFolderRepository, localTagRepository, localSecureNoteRepository, localCustomMetricsService);
+        AuditLogService localAuditLogService = mock(AuditLogService.class);
+        VaultService localVaultService = new VaultService(localVaultRepository, localUserRepository, localFolderRepository, localTagRepository, localSecureNoteRepository, localCustomMetricsService, localAuditLogService);
         
         // Setup: Create test user
         UUID userId = UUID.randomUUID();
@@ -203,7 +207,8 @@ class VaultPropertyTest {
         TagRepository localTagRepository = mock(TagRepository.class);
         SecureNoteRepository localSecureNoteRepository = mock(SecureNoteRepository.class);
         CustomMetricsService localCustomMetricsService = mock(CustomMetricsService.class);
-        VaultService localVaultService = new VaultService(localVaultRepository, localUserRepository, localFolderRepository, localTagRepository, localSecureNoteRepository, localCustomMetricsService);
+        AuditLogService localAuditLogService = mock(AuditLogService.class);
+        VaultService localVaultService = new VaultService(localVaultRepository, localUserRepository, localFolderRepository, localTagRepository, localSecureNoteRepository, localCustomMetricsService, localAuditLogService);
         
         // Setup: Create test user
         UUID userId = UUID.randomUUID();
@@ -304,7 +309,8 @@ class VaultPropertyTest {
         TagRepository localTagRepository = mock(TagRepository.class);
         SecureNoteRepository localSecureNoteRepository = mock(SecureNoteRepository.class);
         CustomMetricsService localCustomMetricsService = mock(CustomMetricsService.class);
-        VaultService localVaultService = new VaultService(localVaultRepository, localUserRepository, localFolderRepository, localTagRepository, localSecureNoteRepository, localCustomMetricsService);
+        AuditLogService localAuditLogService = mock(AuditLogService.class);
+        VaultService localVaultService = new VaultService(localVaultRepository, localUserRepository, localFolderRepository, localTagRepository, localSecureNoteRepository, localCustomMetricsService, localAuditLogService);
         
         // Setup: Create test user and credential
         UUID userId = UUID.randomUUID();
@@ -471,7 +477,8 @@ class VaultPropertyTest {
         TagRepository localTagRepository = mock(TagRepository.class);
         SecureNoteRepository localSecureNoteRepository = mock(SecureNoteRepository.class);
         CustomMetricsService localCustomMetricsService = mock(CustomMetricsService.class);
-        VaultService localVaultService = new VaultService(localVaultRepository, localUserRepository, localFolderRepository, localTagRepository, localSecureNoteRepository, localCustomMetricsService);
+        AuditLogService localAuditLogService = mock(AuditLogService.class);
+        VaultService localVaultService = new VaultService(localVaultRepository, localUserRepository, localFolderRepository, localTagRepository, localSecureNoteRepository, localCustomMetricsService, localAuditLogService);
         
         // Setup: Create test user
         UUID userId = UUID.randomUUID();
@@ -567,7 +574,8 @@ class VaultPropertyTest {
         TagRepository localTagRepository = mock(TagRepository.class);
         SecureNoteRepository localSecureNoteRepository = mock(SecureNoteRepository.class);
         CustomMetricsService localCustomMetricsService = mock(CustomMetricsService.class);
-        VaultService localVaultService = new VaultService(localVaultRepository, localUserRepository, localFolderRepository, localTagRepository, localSecureNoteRepository, localCustomMetricsService);
+        AuditLogService localAuditLogService = mock(AuditLogService.class);
+        VaultService localVaultService = new VaultService(localVaultRepository, localUserRepository, localFolderRepository, localTagRepository, localSecureNoteRepository, localCustomMetricsService, localAuditLogService);
         
         // Setup: Create test user
         UUID userId = UUID.randomUUID();
@@ -666,7 +674,8 @@ class VaultPropertyTest {
         TagRepository localTagRepository = mock(TagRepository.class);
         SecureNoteRepository localSecureNoteRepository = mock(SecureNoteRepository.class);
         CustomMetricsService localCustomMetricsService = mock(CustomMetricsService.class);
-        VaultService localVaultService = new VaultService(localVaultRepository, localUserRepository, localFolderRepository, localTagRepository, localSecureNoteRepository, localCustomMetricsService);
+        AuditLogService localAuditLogService = mock(AuditLogService.class);
+        VaultService localVaultService = new VaultService(localVaultRepository, localUserRepository, localFolderRepository, localTagRepository, localSecureNoteRepository, localCustomMetricsService, localAuditLogService);
         
         // Setup: Create test user
         UUID userId = UUID.randomUUID();

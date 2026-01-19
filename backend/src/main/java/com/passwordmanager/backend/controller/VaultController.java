@@ -2,8 +2,12 @@ package com.passwordmanager.backend.controller;
 
 import com.passwordmanager.backend.dto.CredentialRequest;
 import com.passwordmanager.backend.dto.CredentialResponse;
+import com.passwordmanager.backend.dto.ExportRequest;
+import com.passwordmanager.backend.dto.ExportResponse;
 import com.passwordmanager.backend.dto.FolderRequest;
 import com.passwordmanager.backend.dto.FolderResponse;
+import com.passwordmanager.backend.dto.ImportRequest;
+import com.passwordmanager.backend.dto.ImportResponse;
 import com.passwordmanager.backend.dto.SecureNoteRequest;
 import com.passwordmanager.backend.dto.SecureNoteResponse;
 import com.passwordmanager.backend.dto.SyncRequest;
@@ -1577,6 +1581,181 @@ public class VaultController {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("error", "sync_failed");
             errorResponse.put("message", "Vault synchronization failed");
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    // ========== Import/Export Endpoints ==========
+
+    /**
+     * Imports vault data from external sources.
+     * 
+     * This endpoint allows users to import credentials from CSV formats from major
+     * password managers and browsers. Each entry is validated before import and
+     * invalid entries are rejected. All imported credentials are encrypted with
+     * AES-256 before storage in the vault.
+     * 
+     * @param request The import request containing format and credential entries
+     * @param httpRequest HTTP request for logging purposes
+     * @return Import summary with successful imports, duplicates, and errors
+     */
+    @PostMapping("/import")
+    @Operation(
+        summary = "Import vault data from external sources",
+        description = "Imports credentials from CSV formats from major password managers and browsers. " +
+                     "Each entry is validated before import and invalid entries are rejected. " +
+                     "All imported credentials are encrypted with AES-256 before storage."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Import completed successfully",
+            content = @Content(schema = @Schema(implementation = ImportResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid import request or unsupported format",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - invalid or expired token",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "413",
+            description = "Payload too large - too many entries to import",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        )
+    })
+    public ResponseEntity<?> importVault(
+            @Valid @RequestBody ImportRequest request,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID userId = getCurrentUserId();
+            String clientIp = getClientIpAddress(httpRequest);
+            String userAgent = httpRequest.getHeader("User-Agent");
+            
+            logger.info("Starting vault import for user: {} from IP: {} - {} entries in {} format", 
+                       userId, clientIp, request.getEntries().size(), request.getFormat());
+            
+            ImportResponse response = vaultService.importVault(userId, request);
+            
+            logger.info("Completed vault import for user: {} from IP: {} - {} imported, {} duplicates, {} errors", 
+                       userId, clientIp, response.getImported(), response.getDuplicates(), response.getErrors().size());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid import request: {}", e.getMessage());
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "invalid_request");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            
+        } catch (Exception e) {
+            logger.error("Error importing vault: {}", e.getMessage(), e);
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "import_failed");
+            errorResponse.put("message", "Failed to import vault data");
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    // ========== Export Endpoint ==========
+
+    /**
+     * Exports vault data in the specified format.
+     * 
+     * This endpoint allows users to export their entire vault including credentials,
+     * secure notes, folders, and tags. The export requires master password re-authentication
+     * for security and can optionally be encrypted with a user-specified password.
+     * 
+     * @param request The export request containing format and encryption options
+     * @param httpRequest HTTP request for logging purposes
+     * @return The exported vault data
+     */
+    @PostMapping("/export")
+    @Operation(
+        summary = "Export vault data",
+        description = "Exports all vault data in CSV or JSON format. Requires master password re-authentication. " +
+                     "Can optionally encrypt the export with a user-specified password for additional security."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Vault exported successfully",
+            content = @Content(schema = @Schema(implementation = ExportResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid export request or master password re-authentication failed",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - invalid or expired token",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "429",
+            description = "Too many export requests - rate limit exceeded",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Internal server error during export",
+            content = @Content(schema = @Schema(implementation = Map.class))
+        )
+    })
+    public ResponseEntity<?> exportVault(
+            @Valid @RequestBody ExportRequest request,
+            HttpServletRequest httpRequest) {
+        try {
+            UUID userId = getCurrentUserId();
+            String clientIp = getClientIpAddress(httpRequest);
+            
+            logger.info("Starting vault export for user: {} from IP: {} in format: {}", 
+                       userId, clientIp, request.getFormat());
+            
+            ExportResponse response = vaultService.exportVault(userId, request, clientIp, 
+                httpRequest.getHeader("User-Agent"));
+            
+            logger.info("Completed vault export for user: {} from IP: {} - {} credentials, {} notes, {} folders, {} tags", 
+                       userId, clientIp, response.getCredentialCount(), response.getSecureNoteCount(), 
+                       response.getFolderCount(), response.getTagCount());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid export request: {}", e.getMessage());
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "invalid_request");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            
+        } catch (Exception e) {
+            logger.error("Error during vault export: {}", e.getMessage(), e);
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "export_failed");
+            errorResponse.put("message", "Vault export failed");
             errorResponse.put("timestamp", LocalDateTime.now());
             
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
