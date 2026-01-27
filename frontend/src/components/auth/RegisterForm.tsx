@@ -5,7 +5,7 @@
  * 
  * Handles user registration with master password validation and strength meter.
  * Uses React Hook Form + Zod for validation.
- * Displays recovery key on successful registration.
+ * Displays recovery key on successful registration and offers biometric setup.
  */
 
 import { useState, useEffect } from 'react';
@@ -16,6 +16,8 @@ import { registerSchema, type RegisterFormData } from '@/lib/validations';
 import { authService, type AuthError } from '@/services/authService';
 import { useAuthStore } from '@/stores/authStore';
 import { PasswordValidationService, type PasswordStrength } from '@/lib/passwordValidation';
+import { BiometricSetup } from './BiometricSetup';
+import { biometricService } from '@/services/biometricService';
 
 export function RegisterForm() {
   const router = useRouter();
@@ -26,6 +28,9 @@ export function RegisterForm() {
   const [passwordStrength, setPasswordStrength] = useState<PasswordStrength | null>(null);
   const [recoveryKey, setRecoveryKey] = useState<string>('');
   const [showRecoveryKey, setShowRecoveryKey] = useState(false);
+  const [showBiometricSetup, setShowBiometricSetup] = useState(false);
+  const [biometricSupported, setBiometricSupported] = useState(false);
+  const [registrationData, setRegistrationData] = useState<{ userId: string; email: string; masterPassword: string } | null>(null);
 
   const {
     register,
@@ -39,6 +44,21 @@ export function RegisterForm() {
 
   // Watch master password for strength analysis
   const masterPassword = watch('masterPassword');
+
+  // Check biometric support on component mount
+  useEffect(() => {
+    checkBiometricSupport();
+  }, []);
+
+  const checkBiometricSupport = async () => {
+    try {
+      const supported = await biometricService.isSupported();
+      setBiometricSupported(supported);
+    } catch (error) {
+      console.error('Error checking biometric support:', error);
+      setBiometricSupported(false);
+    }
+  };
 
   // Analyze password strength when password changes
   useEffect(() => {
@@ -72,6 +92,13 @@ export function RegisterForm() {
       setRecoveryKey(response.recoveryKey);
       setShowRecoveryKey(true);
 
+      // Store registration data for potential biometric setup
+      setRegistrationData({
+        userId: response.userId,
+        email: data.email,
+        masterPassword: data.masterPassword,
+      });
+
       // Update auth store (user is now registered but needs to see recovery key)
       setUser({
         id: response.userId,
@@ -88,10 +115,39 @@ export function RegisterForm() {
   };
 
   const handleRecoveryKeyAcknowledged = () => {
-    // User has acknowledged the recovery key, redirect to login
-    setShowRecoveryKey(false);
-    router.push('/login?registered=true');
+    // Check if biometric setup is available
+    if (biometricSupported && registrationData) {
+      setShowRecoveryKey(false);
+      setShowBiometricSetup(true);
+    } else {
+      // User has acknowledged the recovery key, redirect to login
+      setShowRecoveryKey(false);
+      router.push('/login?registered=true');
+    }
   };
+
+  const handleBiometricSetupComplete = (success: boolean) => {
+    setShowBiometricSetup(false);
+    // Redirect to login regardless of biometric setup success
+    router.push('/login?registered=true&biometric=' + (success ? 'enabled' : 'skipped'));
+  };
+
+  const handleBiometricSetupCancel = () => {
+    setShowBiometricSetup(false);
+    router.push('/login?registered=true&biometric=skipped');
+  };
+
+  // Show biometric setup if requested
+  if (showBiometricSetup && registrationData) {
+    return (
+      <BiometricSetup
+        userId={registrationData.userId}
+        masterKey={registrationData.masterPassword}
+        onSetupComplete={handleBiometricSetupComplete}
+        onCancel={handleBiometricSetupCancel}
+      />
+    );
+  }
 
   // If showing recovery key, render recovery key display
   if (showRecoveryKey && recoveryKey) {
@@ -207,7 +263,10 @@ export function RegisterForm() {
             onClick={handleRecoveryKeyAcknowledged}
             className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
-            I have saved my recovery key securely
+            {biometricSupported 
+              ? 'I have saved my recovery key - Continue to Biometric Setup'
+              : 'I have saved my recovery key securely'
+            }
           </button>
         </div>
       </div>

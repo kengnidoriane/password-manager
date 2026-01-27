@@ -3,11 +3,11 @@
 /**
  * LoginForm Component
  * 
- * Handles user authentication with master password.
+ * Handles user authentication with master password and biometric authentication.
  * Uses React Hook Form + Zod for validation.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -15,6 +15,8 @@ import { loginSchema, type LoginFormData } from '@/lib/validations';
 import { authService, type AuthError } from '@/services/authService';
 import { useAuthStore } from '@/stores/authStore';
 import { BackupCodeInput } from './BackupCodeInput';
+import { BiometricAuth } from './BiometricAuth';
+import { biometricService } from '@/services/biometricService';
 
 export function LoginForm() {
   const router = useRouter();
@@ -23,16 +25,80 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showBackupCodeInput, setShowBackupCodeInput] = useState(false);
   const [requires2FA, setRequires2FA] = useState(false);
+  const [showBiometric, setShowBiometric] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
 
   const {
     register,
     handleSubmit,
     getValues,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     mode: 'onBlur',
   });
+
+  // Check biometric availability on component mount
+  useEffect(() => {
+    checkBiometricAvailability();
+  }, []);
+
+  const checkBiometricAvailability = async () => {
+    try {
+      const supported = await biometricService.isSupported();
+      const setup = biometricService.isBiometricSetup();
+      setBiometricAvailable(supported && setup);
+      
+      // Auto-show biometric if available
+      if (supported && setup) {
+        setShowBiometric(true);
+      }
+    } catch (error) {
+      console.error('Error checking biometric availability:', error);
+      setBiometricAvailable(false);
+    }
+  };
+
+  const handleBiometricSuccess = async (masterKey: string) => {
+    try {
+      setApiError('');
+      setLoading(true);
+
+      // Get email from form or stored value
+      const formData = getValues();
+      if (!formData.email) {
+        setApiError('Please enter your email address first.');
+        setShowBiometric(false);
+        return;
+      }
+
+      // Use the master key to authenticate
+      const response = await authService.loginWithMasterKey({
+        email: formData.email,
+        masterKey: masterKey,
+      });
+
+      authService.initializeUserSession(response, formData.email);
+      router.push('/vault');
+    } catch (error) {
+      const authError = error as AuthError;
+      setApiError(authError.message || 'Biometric authentication failed.');
+      setShowBiometric(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBiometricFallback = () => {
+    setShowBiometric(false);
+    setApiError('');
+  };
+
+  const handleBiometricError = (error: string) => {
+    setApiError(error);
+    setShowBiometric(false);
+  };
 
   const onSubmit = async (data: LoginFormData) => {
     try {
@@ -94,6 +160,17 @@ export function LoginForm() {
       setLoading(false);
     }
   };
+
+  // Show biometric authentication if available and enabled
+  if (showBiometric) {
+    return (
+      <BiometricAuth
+        onSuccess={handleBiometricSuccess}
+        onFallback={handleBiometricFallback}
+        onError={handleBiometricError}
+      />
+    );
+  }
 
   // Show backup code input if requested
   if (showBackupCodeInput) {
@@ -300,6 +377,28 @@ export function LoginForm() {
           )}
         </button>
       </div>
+
+      {/* Biometric Authentication Button */}
+      {biometricAvailable && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowBiometric(true)}
+            disabled={isSubmitting || !getValues('email')}
+            className="flex w-full justify-center rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus:ring-offset-gray-800"
+          >
+            <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            Use Biometric Authentication
+          </button>
+          {!getValues('email') && (
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Enter your email address first
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Register Link */}
       <div className="text-center text-sm">

@@ -6,3 +6,5 @@ export { BackupCodeInput } from './BackupCodeInput';
 export { SessionLock } from './SessionLock';
 export { SessionProvider } from './SessionProvider';
 export { SessionStatus } from './SessionStatus';
+export { BiometricAuth } from './BiometricAuth';
+export { BiometricSetup } from './BiometricSetup';

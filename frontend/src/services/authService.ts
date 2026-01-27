@@ -148,6 +148,41 @@ export class AuthService {
   }
 
   /**
+   * Authenticate user with master key (for biometric authentication)
+   * @param credentials User credentials with master key
+   * @returns Promise<LoginResponse> containing token and user info
+   */
+  static async loginWithMasterKey(credentials: { email: string; masterKey: string }): Promise<LoginResponse> {
+    try {
+      // Derive keys from master key
+      const derivedKeys = await CryptoService.deriveKeys(
+        credentials.masterKey,
+        undefined, // Will need salt from server in real implementation
+        config.security.pbkdf2Iterations
+      );
+
+      // Hash the auth key
+      const authKeyHash = await this.hashAuthKey(derivedKeys.authKey);
+
+      // Prepare request payload
+      const requestPayload: LoginRequest = {
+        email: credentials.email,
+        authKeyHash,
+      };
+
+      // Make API request
+      const response = await this.makeRequest<LoginResponse>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(requestPayload),
+      });
+
+      return response;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  /**
    * Initialize session after successful login
    * @param loginResponse Response from login API
    * @param userEmail User's email address
