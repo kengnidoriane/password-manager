@@ -81,7 +81,7 @@ export function TwoFactorSetup({ onSetupComplete, onCancel }: TwoFactorSetupProp
     try {
       setError('');
 
-      // Mock API call - replace with actual API call
+      // Mock API call - replace with actual API call 
       const response = await fetch('/api/v1/auth/2fa/verify', {
         method: 'POST',
         headers: {
