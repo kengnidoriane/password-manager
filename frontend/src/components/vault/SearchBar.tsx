@@ -135,7 +135,7 @@ export function SearchBar({
         
         <input
           ref={inputRef}
-          type="text"
+          type="search"
           placeholder={placeholder}
           value={query}
           onChange={handleInputChange}

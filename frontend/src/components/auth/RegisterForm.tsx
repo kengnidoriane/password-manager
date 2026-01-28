@@ -18,10 +18,12 @@ import { useAuthStore } from '@/stores/authStore';
 import { PasswordValidationService, type PasswordStrength } from '@/lib/passwordValidation';
 import { BiometricSetup } from './BiometricSetup';
 import { biometricService } from '@/services/biometricService';
+import { useResponsiveClasses } from '@/hooks/useResponsive';
 
 export function RegisterForm() {
   const router = useRouter();
   const { setUser, setLoading } = useAuthStore();
+  const { getTouchTargetClasses } = useResponsiveClasses();
   const [apiError, setApiError] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -316,7 +318,7 @@ export function RegisterForm() {
             id="email"
             type="email"
             autoComplete="email"
-            className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm"
+            className={`block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm ${getTouchTargetClasses()}`}
             placeholder="you@example.com"
           />
         </div>
@@ -341,13 +343,13 @@ export function RegisterForm() {
             id="masterPassword"
             type={showPassword ? 'text' : 'password'}
             autoComplete="new-password"
-            className="block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm"
+            className={`block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm ${getTouchTargetClasses()}`}
             placeholder="Create a strong master password"
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 flex items-center pr-3"
+            className={`absolute inset-y-0 right-0 flex items-center pr-3 ${getTouchTargetClasses()}`}
             aria-label={showPassword ? 'Hide password' : 'Show password'}
           >
             {showPassword ? (
@@ -450,13 +452,13 @@ export function RegisterForm() {
             id="confirmPassword"
             type={showConfirmPassword ? 'text' : 'password'}
             autoComplete="new-password"
-            className="block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm"
+            className={`block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm ${getTouchTargetClasses()}`}
             placeholder="Confirm your master password"
           />
           <button
             type="button"
             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute inset-y-0 right-0 flex items-center pr-3"
+            className={`absolute inset-y-0 right-0 flex items-center pr-3 ${getTouchTargetClasses()}`}
             aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
           >
             {showConfirmPassword ? (
@@ -508,7 +510,7 @@ export function RegisterForm() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex w-full justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus:ring-offset-gray-800"
+          className={`flex w-full justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus:ring-offset-gray-800 ${getTouchTargetClasses()}`}
         >
           {isSubmitting ? (
             <>
