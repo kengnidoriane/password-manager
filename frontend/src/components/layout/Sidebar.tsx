@@ -3,10 +3,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUIStore } from '@/stores/uiStore';
+import { useResponsiveClasses } from '@/hooks/useResponsive';
+import { useEffect } from 'react';
 
 /**
  * Sidebar Component
  * Navigation sidebar for authenticated users
+ * Responsive design with mobile overlay and desktop persistent sidebar
  */
 
 interface NavItem {
@@ -96,32 +99,95 @@ const navItems: NavItem[] = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { sidebarOpen } = useUIStore();
+  const { sidebarOpen, closeSidebar } = useUIStore();
+  const { isMobile, getTouchTargetClasses } = useResponsiveClasses();
+
+  // Close sidebar on route change for mobile
+  useEffect(() => {
+    if (isMobile) {
+      closeSidebar();
+    }
+  }, [pathname, isMobile, closeSidebar]);
+
+  // Close sidebar when clicking outside on mobile
+  const handleOverlayClick = () => {
+    if (isMobile) {
+      closeSidebar();
+    }
+  };
 
   if (!sidebarOpen) return null;
 
   return (
-    <aside className="w-64 border-r border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-      <nav className="flex flex-col gap-1 p-4">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
-          
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
-                  : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
-              }`}
+    <>
+      {/* Mobile overlay */}
+      {isMobile && (
+        <div
+          className="fixed inset-0 z-40 bg-black bg-opacity-50 transition-opacity"
+          onClick={handleOverlayClick}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`
+          ${isMobile 
+            ? 'fixed left-0 top-0 z-50 h-full w-64 transform transition-transform duration-200 ease-in-out' 
+            : 'w-64'
+          }
+          border-r border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900
+          ${isMobile ? 'mt-16' : ''}
+        `}
+      >
+        {/* Mobile header */}
+        {isMobile && (
+          <div className="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-800">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Navigation
+            </h2>
+            <button
+              onClick={closeSidebar}
+              className={`rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 ${getTouchTargetClasses()}`}
+              aria-label="Close sidebar"
             >
-              {item.icon}
-              {item.name}
-            </Link>
-          );
-        })}
-      </nav>
-    </aside>
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        )}
+
+        {/* Navigation */}
+        <nav className="flex flex-col gap-1 p-4">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+            
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`
+                  flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors
+                  ${getTouchTargetClasses()}
+                  ${isActive
+                    ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
+                  }
+                `}
+              >
+                {item.icon}
+                {item.name}
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
+    </>
   );
 }

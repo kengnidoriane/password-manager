@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 import { loginSchema, type LoginFormData } from '@/lib/validations';
 import { authService, type AuthError } from '@/services/authService';
 import { useAuthStore } from '@/stores/authStore';
+import { useResponsiveClasses } from '@/hooks/useResponsive';
 import { BackupCodeInput } from './BackupCodeInput';
 import { BiometricAuth } from './BiometricAuth';
 import { biometricService } from '@/services/biometricService';
@@ -21,6 +22,7 @@ import { biometricService } from '@/services/biometricService';
 export function LoginForm() {
   const router = useRouter();
   const { setUser, setSession, setLoading } = useAuthStore();
+  const { getTouchTargetClasses } = useResponsiveClasses();
   const [apiError, setApiError] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
   const [showBackupCodeInput, setShowBackupCodeInput] = useState(false);
@@ -226,7 +228,7 @@ export function LoginForm() {
             id="email"
             type="email"
             autoComplete="email"
-            className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm"
+            className={`block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm ${getTouchTargetClasses()}`}
             placeholder="you@example.com"
           />
         </div>
@@ -251,13 +253,13 @@ export function LoginForm() {
             id="masterPassword"
             type={showPassword ? 'text' : 'password'}
             autoComplete="current-password"
-            className="block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm"
+            className={`block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm ${getTouchTargetClasses()}`}
             placeholder="Enter your master password"
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 flex items-center pr-3"
+            className={`absolute inset-y-0 right-0 flex items-center pr-3 ${getTouchTargetClasses()}`}
             aria-label={showPassword ? 'Hide password' : 'Show password'}
           >
             {showPassword ? (
@@ -318,7 +320,7 @@ export function LoginForm() {
             id="twoFactorCode"
             type="text"
             autoComplete="one-time-code"
-            className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm"
+            className={`block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm ${getTouchTargetClasses()}`}
             placeholder="000000"
             maxLength={6}
           />
@@ -346,7 +348,7 @@ export function LoginForm() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex w-full justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus:ring-offset-gray-800"
+          className={`flex w-full justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus:ring-offset-gray-800 ${getTouchTargetClasses()}`}
         >
           {isSubmitting ? (
             <>
@@ -385,7 +387,7 @@ export function LoginForm() {
             type="button"
             onClick={() => setShowBiometric(true)}
             disabled={isSubmitting || !getValues('email')}
-            className="flex w-full justify-center rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus:ring-offset-gray-800"
+            className={`flex w-full justify-center rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus:ring-offset-gray-800 ${getTouchTargetClasses()}`}
           >
             <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />

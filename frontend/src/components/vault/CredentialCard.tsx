@@ -4,13 +4,14 @@
  * CredentialCard Component
  * 
  * Displays a single credential with copy buttons, password reveal/mask toggle,
- * and last-used timestamp display.
+ * and last-used timestamp display. Includes swipe gestures for mobile.
  */
 
 import { useState, useCallback } from 'react';
 import { Credential, Folder, Tag } from '@/lib/db';
 import { useVault } from '@/hooks/useVault';
 import { useClipboard } from '@/hooks/useClipboard';
+import { useSwipeGesture, useResponsiveClasses } from '@/hooks/useResponsive';
 
 interface CredentialCardProps {
   credential: Credential;
@@ -32,14 +33,27 @@ export function CredentialCard({
   tags
 }: CredentialCardProps) {
   const { copyToClipboard } = useClipboard();
+  const { isMobile, getTouchTargetClasses } = useResponsiveClasses();
   const [showPassword, setShowPassword] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [showSwipeActions, setShowSwipeActions] = useState(false);
 
   // Get folder name
   const folder = folders.find(f => f.id === credential.folderId);
   
   // Get tag names and colors
   const credentialTags = tags.filter(tag => credential.tags.includes(tag.id));
+
+  // Swipe gesture handling for mobile
+  const swipeHandlers = useSwipeGesture((gesture) => {
+    if (!isMobile) return;
+    
+    if (gesture.direction === 'left' && gesture.distance > 100) {
+      setShowSwipeActions(true);
+    } else if (gesture.direction === 'right' && showSwipeActions) {
+      setShowSwipeActions(false);
+    }
+  });
 
   // Format last used timestamp
   const formatLastUsed = (timestamp?: number) => {
@@ -113,20 +127,75 @@ export function CredentialCard({
     onSelect?.();
   };
 
+  const handleSwipeEdit = () => {
+    setShowSwipeActions(false);
+    onEdit?.();
+  };
+
+  const handleSwipeShare = () => {
+    setShowSwipeActions(false);
+    onShare?.();
+  };
+
   return (
     <div
-      className={`rounded-lg border p-4 transition-all cursor-pointer ${
-        isSelected
+      className={`
+        relative rounded-lg border p-4 transition-all cursor-pointer overflow-hidden
+        ${isMobile ? 'mobile-card' : ''}
+        ${isSelected
           ? 'border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-900/20'
           : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700'
-      }`}
+        }
+      `}
       onClick={handleCardClick}
+      {...(isMobile ? swipeHandlers : {})}
     >
+      {/* Swipe Actions (Mobile Only) */}
+      {isMobile && (
+        <div
+          className={`
+            absolute right-0 top-0 h-full flex items-center bg-gradient-to-l from-red-500 to-orange-500 px-4 transition-transform duration-200
+            ${showSwipeActions ? 'translate-x-0' : 'translate-x-full'}
+          `}
+        >
+          <div className="flex gap-2">
+            <button
+              onClick={handleSwipeShare}
+              className={`rounded-full bg-white/20 p-3 text-white ${getTouchTargetClasses()}`}
+              aria-label="Share credential"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={handleSwipeEdit}
+              className={`rounded-full bg-white/20 p-3 text-white ${getTouchTargetClasses()}`}
+              aria-label="Edit credential"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
+            <h3 className={`font-semibold text-gray-900 dark:text-white truncate ${isMobile ? 'text-base' : 'text-lg'}`}>
               {credential.title}
             </h3>
             {folder && (
@@ -149,7 +218,7 @@ export function CredentialCard({
               href={credential.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 truncate block mt-1"
+              className={`text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 truncate block mt-1 ${getTouchTargetClasses()}`}
               onClick={(e) => e.stopPropagation()}
             >
               {credential.url}
@@ -157,46 +226,49 @@ export function CredentialCard({
           )}
         </div>
         
-        <div className="flex items-center gap-2 ml-4">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onShare?.();
-            }}
-            className="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-            title="Share credential"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
-              />
-            </svg>
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit?.();
-            }}
-            className="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-            title="Edit credential"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-              />
-            </svg>
-          </button>
-        </div>
+        {/* Desktop Actions */}
+        {!isMobile && (
+          <div className="flex items-center gap-2 ml-4">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onShare?.();
+              }}
+              className="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+              title="Share credential"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit?.();
+              }}
+              className="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+              title="Edit credential"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Credential Fields */}
-      <div className="mt-4 space-y-3">
+      <div className={`mt-4 space-y-3 ${isMobile ? 'space-y-4' : ''}`}>
         {/* Username */}
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
@@ -209,7 +281,7 @@ export function CredentialCard({
           </div>
           <button
             onClick={handleUsernameClick}
-            className="ml-2 rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+            className={`ml-2 rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 ${getTouchTargetClasses()}`}
             title="Copy username"
           >
             {copiedField === 'username' ? (
@@ -247,7 +319,7 @@ export function CredentialCard({
           <div className="flex items-center gap-1 ml-2">
             <button
               onClick={togglePasswordVisibility}
-              className="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+              className={`rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 ${getTouchTargetClasses()}`}
               title={showPassword ? 'Hide password' : 'Show password'}
             >
               {showPassword ? (
@@ -278,7 +350,7 @@ export function CredentialCard({
             </button>
             <button
               onClick={handlePasswordClick}
-              className="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+              className={`rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 ${getTouchTargetClasses()}`}
               title="Copy password"
             >
               {copiedField === 'password' ? (
@@ -317,7 +389,7 @@ export function CredentialCard({
             </div>
             <button
               onClick={handleUrlClick}
-              className="ml-2 rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+              className={`ml-2 rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 ${getTouchTargetClasses()}`}
               title="Copy URL"
             >
               {copiedField === 'url' ? (
@@ -356,7 +428,7 @@ export function CredentialCard({
             </div>
             <button
               onClick={handleNotesClick}
-              className="ml-2 rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+              className={`ml-2 rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 ${getTouchTargetClasses()}`}
               title="Copy notes"
             >
               {copiedField === 'notes' ? (
@@ -384,7 +456,7 @@ export function CredentialCard({
       </div>
 
       {/* Footer */}
-      <div className="mt-4 flex items-center justify-between border-t border-gray-200 pt-3 dark:border-gray-700">
+      <div className={`mt-4 flex items-center justify-between border-t border-gray-200 pt-3 dark:border-gray-700 ${isMobile ? 'flex-col gap-2 items-start' : ''}`}>
         {/* Tags */}
         <div className="flex flex-wrap gap-1">
           {credentialTags.map((tag) => (
@@ -406,6 +478,13 @@ export function CredentialCard({
           {formatLastUsed(credential.lastUsed)}
         </div>
       </div>
+
+      {/* Mobile swipe hint */}
+      {isMobile && !showSwipeActions && (
+        <div className="absolute bottom-2 right-2 text-xs text-gray-400 opacity-50">
+          ← Swipe for actions
+        </div>
+      )}
     </div>
   );
 }

@@ -10,6 +10,7 @@
 import { useState, useMemo } from 'react';
 import { useVault } from '@/hooks/useVault';
 import { useSearch } from '@/hooks/useSearch';
+import { useResponsiveClasses } from '@/hooks/useResponsive';
 import { CredentialCard } from './CredentialCard';
 import { SearchBar } from './SearchBar';
 import { SearchResults } from './SearchResults';
@@ -46,6 +47,8 @@ export function VaultList({
     hasResults,
     isEmpty
   } = useSearch();
+
+  const { isMobile, isTablet } = useResponsiveClasses();
 
   const [sortBy, setSortBy] = useState<'name' | 'lastUsed' | 'created'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -304,7 +307,7 @@ export function VaultList({
               )}
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : isTablet ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3'}`}>
               {sortedCredentials.map((credential) => (
                 <CredentialCard
                   key={credential.id}
