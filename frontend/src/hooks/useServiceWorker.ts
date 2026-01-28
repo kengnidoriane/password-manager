@@ -208,40 +208,118 @@ export function useServiceWorker(): ServiceWorkerState & ServiceWorkerActions {
 export function useServiceWorkerUpdate() {
   const [isUpdateAvailable, setIsUpdateAvailable] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState<{
+    hasUpdate: boolean;
+    isWaiting: boolean;
+    isInstalling: boolean;
+    currentVersion?: string;
+    newVersion?: string;
+  }>({
+    hasUpdate: false,
+    isWaiting: false,
+    isInstalling: false,
+  });
 
   useEffect(() => {
-    const handleUpdateAvailable = () => {
+    const handleUpdateAvailable = (event: CustomEvent) => {
+      console.log('Update available event received:', event.detail);
       setIsUpdateAvailable(true);
+      if (event.detail.updateStatus) {
+        setUpdateStatus(event.detail.updateStatus);
+      }
     };
 
-    window.addEventListener('sw-update-available', handleUpdateAvailable);
+    const handleUpdateError = (event: CustomEvent) => {
+      console.error('Update error:', event.detail);
+      setIsUpdating(false);
+    };
+
+    const handleUpdateSuccess = () => {
+      console.log('Update successful');
+      setIsUpdating(false);
+      setIsUpdateAvailable(false);
+    };
+
+    window.addEventListener('sw-update-available', handleUpdateAvailable as EventListener);
+    window.addEventListener('sw-update-error', handleUpdateError as EventListener);
+    window.addEventListener('sw-update-success', handleUpdateSuccess);
+
+    // Check for existing updates on mount
+    const checkExistingUpdate = () => {
+      const status = serviceWorkerManager.getUpdateStatus();
+      if (status.hasUpdate) {
+        setIsUpdateAvailable(true);
+        setUpdateStatus(status);
+      }
+    };
+
+    // Small delay to ensure service worker is initialized
+    setTimeout(checkExistingUpdate, 1000);
 
     return () => {
-      window.removeEventListener('sw-update-available', handleUpdateAvailable);
+      window.removeEventListener('sw-update-available', handleUpdateAvailable as EventListener);
+      window.removeEventListener('sw-update-error', handleUpdateError as EventListener);
+      window.removeEventListener('sw-update-success', handleUpdateSuccess);
     };
   }, []);
 
   const applyUpdate = useCallback(async () => {
     setIsUpdating(true);
     try {
+      console.log('Applying service worker update...');
       await serviceWorkerManager.updateServiceWorker();
-      setIsUpdateAvailable(false);
+      
+      // The page will reload automatically via controllerchange event
+      // But we'll also set a timeout as fallback
+      setTimeout(() => {
+        if (isUpdating) {
+          console.log('Reloading page after update timeout');
+          window.location.reload();
+        }
+      }, 3000);
+      
     } catch (error) {
       console.error('Failed to apply update:', error);
-    } finally {
       setIsUpdating(false);
+      
+      // Dispatch error event
+      const errorEvent = new CustomEvent('sw-update-error', {
+        detail: { error: error instanceof Error ? error.message : 'Unknown error' }
+      });
+      window.dispatchEvent(errorEvent);
     }
-  }, []);
+  }, [isUpdating]);
 
   const dismissUpdate = useCallback(() => {
+    console.log('Dismissing update notification');
     setIsUpdateAvailable(false);
+  }, []);
+
+  const checkForUpdates = useCallback(async () => {
+    try {
+      console.log('Manually checking for updates...');
+      const hasUpdate = await serviceWorkerManager.checkForUpdates();
+      
+      if (hasUpdate) {
+        const status = serviceWorkerManager.getUpdateStatus();
+        setIsUpdateAvailable(true);
+        setUpdateStatus(status);
+      }
+      
+      return hasUpdate;
+    } catch (error) {
+      console.error('Failed to check for updates:', error);
+      return false;
+    }
   }, []);
 
   return {
     isUpdateAvailable,
     isUpdating,
+    updateStatus,
     applyUpdate,
     dismissUpdate,
+    checkForUpdates,
   };
 }
 
