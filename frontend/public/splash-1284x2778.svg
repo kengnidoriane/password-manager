@@ -1,0 +1,19 @@
+<svg width="1284" height="2778" viewBox="0 0 1284 2778" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1284" height="2778" fill="#3b82f6"/>
+  
+  <!-- Centered logo -->
+  <g transform="translate(642,1389)">
+    <!-- Lock icon -->
+    <circle cx="0" cy="0" r="130" fill="white" opacity="0.1"/>
+    <rect x="-65" y="-32.5" width="130" height="97.5" rx="13" fill="white" stroke="none"/>
+    <rect x="-48.75" y="-16.25" width="97.5" height="65" fill="#3b82f6"/>
+    <circle cx="0" cy="-65" r="40.625" fill="none" stroke="white" stroke-width="13"/>
+    <circle cx="0" cy="8.125" r="9.75" fill="white"/>
+    <rect x="-3.25" y="17.875" width="6.5" height="19.5" fill="white"/>
+  </g>
+  
+  <!-- App name -->
+  <text x="642" y="1570" text-anchor="middle" fill="white" font-family="system-ui, -apple-system, sans-serif" font-size="52" font-weight="600">Password Manager</text>
+  <text x="642" y="1625" text-anchor="middle" fill="white" font-family="system-ui, -apple-system, sans-serif" font-size="26" opacity="0.8">Secure • Private • Simple</text>
+</svg>

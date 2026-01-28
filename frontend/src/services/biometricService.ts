@@ -25,7 +25,9 @@ interface BiometricAuthResult {
 
 class BiometricService {
   private readonly STORAGE_KEY = 'biometric_credentials';
-  private readonly RP_ID = window.location.hostname;
+  private get RP_ID() {
+    return typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+  }
   private readonly RP_NAME = 'Password Manager';
 
   /**
@@ -34,6 +36,7 @@ class BiometricService {
   async isSupported(): Promise<boolean> {
     try {
       return !!(
+        typeof window !== 'undefined' &&
         window.PublicKeyCredential &&
         await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
       );
@@ -95,7 +98,7 @@ class BiometricService {
       // Store the credential info locally
       const biometricCredential: BiometricCredential = {
         id: credential.id,
-        publicKey: credential.response.publicKey!,
+        publicKey: (credential.response as any).publicKey || new ArrayBuffer(0),
         encryptedMasterKey: encryptedData.encryptedData,
         iv: encryptedData.iv,
         authTag: encryptedData.authTag,
@@ -222,7 +225,7 @@ class BiometricService {
 
     return {
       encryptedData: this.arrayBufferToBase64(encrypted),
-      iv: this.arrayBufferToBase64(iv),
+      iv: this.arrayBufferToBase64(iv.buffer),
       authTag: '', // GCM includes auth tag in encrypted data
     };
   }

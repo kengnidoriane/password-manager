@@ -131,17 +131,7 @@ export class ServiceWorkerManager {
         icon: '/icon-192.svg',
         badge: '/icon-192.svg',
         tag: 'app-update',
-        requireInteraction: true,
-        actions: [
-          {
-            action: 'refresh',
-            title: 'Refresh Now'
-          },
-          {
-            action: 'dismiss',
-            title: 'Later'
-          }
-        ]
+        requireInteraction: true
       });
     }
   }
@@ -216,8 +206,11 @@ export class ServiceWorkerManager {
     }
 
     try {
-      await this.registration.sync.register(tag);
-      console.log('Background sync registered:', tag);
+      const syncManager = (this.registration as any).sync;
+      if (syncManager) {
+        await syncManager.register(tag);
+        console.log('Background sync registered:', tag);
+      }
     } catch (error) {
       console.error('Failed to register background sync:', error);
     }
@@ -281,7 +274,7 @@ export class ServiceWorkerManager {
         throw new Error('Push notification permission denied');
       }
 
-      const options: PushSubscriptionOptions = {
+      const options: any = {
         userVisibleOnly: true,
       };
 
@@ -353,17 +346,7 @@ export class ServiceWorkerManager {
       icon: '/icon-192.svg',
       badge: '/icon-192.svg',
       tag: 'app-update',
-      requireInteraction: true,
-      actions: [
-        {
-          action: 'refresh',
-          title: 'Refresh Now'
-        },
-        {
-          action: 'dismiss',
-          title: 'Later'
-        }
-      ]
+      requireInteraction: true
     });
   }
 
