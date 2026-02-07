@@ -12,6 +12,63 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizeCss: true,
   },
+  
+  // Security Headers
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          // Content Security Policy
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // unsafe-inline needed for Next.js
+              "style-src 'self' 'unsafe-inline'", // unsafe-inline needed for styled-components/CSS-in-JS
+              "img-src 'self' data: https: blob:",
+              "font-src 'self' data:",
+              "connect-src 'self' https://api.pwnedpasswords.com", // For breach check API
+              "frame-ancestors 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "upgrade-insecure-requests"
+            ].join('; ')
+          },
+          // HTTP Strict Transport Security (HSTS)
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains'
+          },
+          // X-Frame-Options
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY'
+          },
+          // X-Content-Type-Options
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff'
+          },
+          // X-XSS-Protection (legacy, but still useful for older browsers)
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block'
+          },
+          // Referrer-Policy
+          {
+            key: 'Referrer-Policy',
+            value: 'no-referrer'
+          },
+          // Permissions-Policy (formerly Feature-Policy)
+          {
+            key: 'Permissions-Policy',
+            value: 'geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()'
+          }
+        ]
+      }
+    ];
+  }
 };
 
 export default withPWA({

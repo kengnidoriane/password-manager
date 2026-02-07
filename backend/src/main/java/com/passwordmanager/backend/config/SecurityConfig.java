@@ -63,6 +63,43 @@ public class SecurityConfig {
                 // Configure CORS
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 
+                // Configure security headers
+                .headers(headers -> headers
+                        // Content Security Policy
+                        .contentSecurityPolicy(csp -> csp
+                                .policyDirectives("default-src 'self'; " +
+                                        "script-src 'self'; " +
+                                        "style-src 'self' 'unsafe-inline'; " +
+                                        "img-src 'self' data: https:; " +
+                                        "font-src 'self' data:; " +
+                                        "connect-src 'self'; " +
+                                        "frame-ancestors 'none'; " +
+                                        "base-uri 'self'; " +
+                                        "form-action 'self'")
+                        )
+                        // HTTP Strict Transport Security (HSTS)
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(31536000) // 1 year
+                        )
+                        // X-Frame-Options
+                        .frameOptions(frame -> frame.deny())
+                        // X-Content-Type-Options
+                        .contentTypeOptions(contentType -> {})
+                        // X-XSS-Protection (legacy, but still useful for older browsers)
+                        .xssProtection(xss -> xss
+                                .headerValue(org.springframework.security.web.header.writers.XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK)
+                        )
+                        // Referrer-Policy
+                        .referrerPolicy(referrer -> referrer
+                                .policy(org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER)
+                        )
+                        // Permissions-Policy (formerly Feature-Policy)
+                        .permissionsPolicy(permissions -> permissions
+                                .policy("geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()")
+                        )
+                )
+                
                 // Configure authorization rules
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
