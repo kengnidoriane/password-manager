@@ -190,7 +190,28 @@ self.addEventListener('notificationclick', event => {
   
   event.notification.close();
 
-  if (event.action === 'refresh') {
+  if (event.action === 'update') {
+    // Handle update action from notification
+    console.log('Update action clicked');
+    event.waitUntil(
+      Promise.resolve().then(() => {
+        // Skip waiting and activate immediately
+        self.skipWaiting();
+        
+        // Open or focus the app
+        return clients.matchAll({ type: 'window' }).then(clientList => {
+          if (clientList.length > 0) {
+            return clientList[0].focus();
+          }
+          return clients.openWindow('/');
+        });
+      })
+    );
+  } else if (event.action === 'dismiss') {
+    // Just close the notification
+    console.log('Dismiss action clicked');
+    return;
+  } else if (event.action === 'refresh') {
     // Refresh the app
     event.waitUntil(
       clients.matchAll({ type: 'window' }).then(clientList => {
@@ -200,9 +221,6 @@ self.addEventListener('notificationclick', event => {
         return clients.openWindow('/');
       })
     );
-  } else if (event.action === 'dismiss') {
-    // Just close the notification
-    return;
   } else {
     // Default action - open the app
     event.waitUntil(
@@ -228,11 +246,21 @@ self.addEventListener('message', event => {
   console.log('Service worker received message:', event.data);
   
   if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('Skipping waiting and taking control');
     self.skipWaiting();
   }
   
   if (event.data && event.data.type === 'GET_VERSION') {
     event.ports[0].postMessage({ version: '1.0.0' });
+  }
+
+  if (event.data && event.data.type === 'CHECK_UPDATE') {
+    // Respond with current update status
+    event.ports[0].postMessage({ 
+      hasUpdate: !!self.registration.waiting,
+      isWaiting: !!self.registration.waiting,
+      isInstalling: !!self.registration.installing
+    });
   }
 });
 
@@ -250,6 +278,10 @@ self.addEventListener('install', event => {
         '/icon-192.svg',
         '/icon-512.svg'
       ]);
+    }).then(() => {
+      console.log('Critical resources cached');
+      // Don't skip waiting automatically - let the user decide
+      // self.skipWaiting();
     })
   );
 });
@@ -258,17 +290,34 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   console.log('Service worker activating...');
   
-  // Clean up old caches
+  // Clean up old caches and take control of all clients
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName.startsWith('critical-cache-') && cacheName !== 'critical-cache-v1') {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
+    Promise.all([
+      // Clean up old caches
+      caches.keys().then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => {
+            if (cacheName.startsWith('critical-cache-') && cacheName !== 'critical-cache-v1') {
+              console.log('Deleting old cache:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      }),
+      // Take control of all clients immediately
+      self.clients.claim()
+    ]).then(() => {
+      console.log('Service worker activated and claimed all clients');
+      
+      // Notify all clients that the service worker has been updated
+      return self.clients.matchAll().then(clients => {
+        clients.forEach(client => {
+          client.postMessage({
+            type: 'SW_ACTIVATED',
+            payload: { version: '1.0.0', timestamp: Date.now() }
+          });
+        });
+      });
     })
   );
 });

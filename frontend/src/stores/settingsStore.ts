@@ -105,22 +105,24 @@ export const useSettingsStore = create<SettingsState>()(
       }),
 
       applyTheme: (theme: 'light' | 'dark' | 'auto') => {
-        const root = document.documentElement;
-        
-        // Remove existing theme classes
-        root.classList.remove('light', 'dark');
-        
-        if (theme === 'auto') {
-          // Use system preference
-          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          root.classList.add(prefersDark ? 'dark' : 'light');
-        } else {
-          // Use explicit theme
-          root.classList.add(theme);
+        if (typeof window !== 'undefined') {
+          const root = document.documentElement;
+          
+          // Remove existing theme classes
+          root.classList.remove('light', 'dark');
+          
+          if (theme === 'auto') {
+            // Use system preference
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            root.classList.add(prefersDark ? 'dark' : 'light');
+          } else {
+            // Use explicit theme
+            root.classList.add(theme);
+          }
+          
+          // Store theme preference for system theme detection
+          localStorage.setItem('theme-preference', theme);
         }
-        
-        // Store theme preference for system theme detection
-        localStorage.setItem('theme-preference', theme);
       }
     }),
     {

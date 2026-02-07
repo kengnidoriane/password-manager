@@ -127,6 +127,8 @@ export function BackupCodeInput({ onSubmit, onCancel, isLoading = false, error }
               {...register('code')}
               id="code"
               type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               autoComplete="one-time-code"
               className="block w-full rounded-md border border-gray-300 px-3 py-2 text-center text-lg font-mono shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
               placeholder="12345678"

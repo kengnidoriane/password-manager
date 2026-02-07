@@ -1,0 +1,9 @@
+<svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">
+  <!-- Security shield icon -->
+  <rect width="96" height="96" fill="#3b82f6" rx="12"/>
+  <path d="M48 16L32 24v16c0 10.4 6.4 19.2 16 22.4 9.6-3.2 16-12 16-22.4V24L48 16z" fill="white"/>
+  <path d="M44 36l4 4 8-8" stroke="#3b82f6" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Security text -->
+  <text x="48" y="76" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-size="10" font-weight="600">SECURITY</text>
+</svg>

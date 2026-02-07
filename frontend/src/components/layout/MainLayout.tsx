@@ -3,14 +3,17 @@
 import { useEffect } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
+import { useResponsiveClasses } from '@/hooks/useResponsive';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { NotificationContainer } from '../ui/NotificationContainer';
 import { ClipboardStatus } from '../ui/ClipboardStatus';
+import { ResponsiveLayout } from './ResponsiveLayout';
 
 /**
  * Main Layout Component
  * Wraps authenticated pages with header, sidebar, and notifications
+ * Responsive design with mobile-first approach
  */
 
 interface MainLayoutProps {
@@ -20,6 +23,7 @@ interface MainLayoutProps {
 export function MainLayout({ children }: MainLayoutProps) {
   const { isAuthenticated } = useAuthStore();
   const { setOnlineStatus } = useUIStore();
+  const { isMobile } = useResponsiveClasses();
 
   // Monitor online/offline status
   useEffect(() => {
@@ -45,8 +49,10 @@ export function MainLayout({ children }: MainLayoutProps) {
       <div className="flex flex-1 overflow-hidden">
         {isAuthenticated && <Sidebar />}
         
-        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-950">
-          {children}
+        <main className={`flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-950 ${isMobile ? 'w-full' : ''}`}>
+          <ResponsiveLayout>
+            {children}
+          </ResponsiveLayout>
         </main>
       </div>
 

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="#3b82f6"/>
+  
+  <!-- Lock icon -->
+  <g transform="translate(156, 156)">
+    <!-- Lock body -->
+    <rect x="60" y="120" width="80" height="80" rx="8" fill="white"/>
+    
+    <!-- Lock shackle -->
+    <path d="M80 120V80C80 57.9086 97.9086 40 120 40H80C57.9086 40 40 57.9086 40 80V120" 
+          stroke="white" stroke-width="8" fill="none" stroke-linecap="round"/>
+    
+    <!-- Keyhole -->
+    <circle cx="100" cy="150" r="8" fill="#3b82f6"/>
+    <rect x="96" y="150" width="8" height="20" fill="#3b82f6"/>
+  </g>
+  
+  <!-- Security dots pattern -->
+  <g opacity="0.1">
+    <circle cx="128" cy="128" r="4" fill="white"/>
+    <circle cx="384" cy="128" r="4" fill="white"/>
+    <circle cx="128" cy="384" r="4" fill="white"/>
+    <circle cx="384" cy="384" r="4" fill="white"/>
+  </g>
+</svg>

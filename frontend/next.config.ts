@@ -33,13 +33,6 @@ export default withPWA({
             maxAgeSeconds: 60 * 60 * 24, // 24 hours
           },
           networkTimeoutSeconds: 10,
-          cacheKeyWillBeUsed: async ({ request }) => {
-            // Don't cache authenticated requests
-            if (request.headers.get('Authorization')) {
-              return null;
-            }
-            return request.url;
-          },
         },
       },
       // Cache static assets with cache-first strategy
@@ -79,15 +72,5 @@ export default withPWA({
         },
       },
     ],
-    // Background sync for offline operations
-    backgroundSync: {
-      options: {
-        maxRetentionTime: 24 * 60, // 24 hours in minutes
-      },
-    },
-    // Offline fallback
-    fallbacks: {
-      document: '/offline',
-    },
   }
 })(nextConfig);

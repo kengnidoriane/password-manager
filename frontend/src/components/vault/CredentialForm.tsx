@@ -14,6 +14,7 @@ import { credentialSchema, type CredentialFormData } from '@/lib/validations';
 import { useVault } from '@/hooks/useVault';
 import { Credential } from '@/lib/db';
 import { PasswordGeneratorService } from '@/lib/passwordGenerator';
+import { useResponsiveClasses } from '@/hooks/useResponsive';
 
 interface CredentialFormProps {
   credential?: Credential;
@@ -29,6 +30,7 @@ export function CredentialForm({
   isLoading = false
 }: CredentialFormProps) {
   const { folders, tags, createTag } = useVault();
+  const { getTouchTargetClasses } = useResponsiveClasses();
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordGenerator, setShowPasswordGenerator] = useState(false);
   const [newTagName, setNewTagName] = useState('');
@@ -148,7 +150,7 @@ export function CredentialForm({
             {...register('title')}
             id="title"
             type="text"
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm"
+            className={`mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm ${getTouchTargetClasses()}`}
             placeholder="e.g., Gmail, Facebook, Work Email"
           />
           {errors.title && (
@@ -171,7 +173,7 @@ export function CredentialForm({
             id="username"
             type="text"
             autoComplete="username"
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm"
+            className={`mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm ${getTouchTargetClasses()}`}
             placeholder="username or email"
           />
           {errors.username && (
@@ -204,13 +206,13 @@ export function CredentialForm({
               id="password"
               type={showPassword ? 'text' : 'password'}
               autoComplete="new-password"
-              className="block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm font-mono"
+              className={`block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm font-mono ${getTouchTargetClasses()}`}
               placeholder="Enter or generate a strong password"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3"
+              className={`absolute inset-y-0 right-0 flex items-center pr-3 ${getTouchTargetClasses()}`}
             >
               {showPassword ? (
                 <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -347,7 +349,7 @@ export function CredentialForm({
             {...register('url')}
             id="url"
             type="url"
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm"
+            className={`mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm ${getTouchTargetClasses()}`}
             placeholder="https://example.com"
           />
           {errors.url && (

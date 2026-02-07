@@ -24,3 +24,185 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* PWA Update Prompt Animations */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-in;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 2s ease-in-out infinite;
+}
+
+/* PWA Mode Styles */
+.pwa-mode {
+  /* Add any PWA-specific styles here */
+  --pwa-safe-area-top: env(safe-area-inset-top);
+  --pwa-safe-area-bottom: env(safe-area-inset-bottom);
+  --pwa-safe-area-left: env(safe-area-inset-left);
+  --pwa-safe-area-right: env(safe-area-inset-right);
+}
+
+.pwa-mode .pwa-safe-area {
+  padding-top: var(--pwa-safe-area-top);
+  padding-bottom: var(--pwa-safe-area-bottom);
+  padding-left: var(--pwa-safe-area-left);
+  padding-right: var(--pwa-safe-area-right);
+}
+
+/* Responsive Design Utilities */
+/* Touch-friendly minimum sizes for interactive elements */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Smooth transitions for responsive changes */
+.responsive-transition {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Mobile-first responsive breakpoints */
+@media (max-width: 768px) {
+  /* Ensure all interactive elements meet touch target requirements */
+  button, 
+  input, 
+  select, 
+  textarea, 
+  a[role="button"],
+  [role="button"],
+  [tabindex="0"] {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+
+  /* Improve text input on mobile */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="url"],
+  input[type="search"],
+  textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+    min-height: 44px;
+  }
+
+  /* Mobile-optimized spacing */
+  .mobile-spacing {
+    padding: 1rem;
+  }
+
+  /* Mobile-friendly card layouts */
+  .mobile-card {
+    margin: 0.5rem;
+    border-radius: 0.75rem;
+  }
+}
+
+/* Tablet breakpoint */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .tablet-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+}
+
+/* Desktop breakpoint */
+@media (min-width: 1025px) {
+  .desktop-layout {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+/* Swipe gesture support */
+.swipe-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.swipe-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.1));
+  transform: translateX(100%);
+  transition: transform 0.2s ease-in-out;
+}
+
+.swipe-container.swiped .swipe-actions {
+  transform: translateX(0);
+}
+
+/* Orientation change handling */
+@media (orientation: landscape) {
+  .landscape-adjust {
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+}
+
+@media (orientation: portrait) {
+  .portrait-adjust {
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .high-dpi-icons {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .responsive-transition,
+  .animate-slide-up,
+  .animate-fade-in,
+  .animate-pulse-slow {
+    animation: none;
+    transition: none;
+  }
+}

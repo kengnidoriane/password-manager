@@ -18,6 +18,8 @@ export class ServiceWorkerManager {
   private static instance: ServiceWorkerManager;
   private registration: ServiceWorkerRegistration | null = null;
   private isSupported: boolean = false;
+  private isRefreshing: boolean = false;
+  private updateCheckInterval: NodeJS.Timeout | null = null;
 
   private constructor() {
     this.isSupported = typeof window !== 'undefined' && 'serviceWorker' in navigator;
@@ -46,22 +48,112 @@ export class ServiceWorkerManager {
       // Listen for messages from service worker
       navigator.serviceWorker.addEventListener('message', this.handleServiceWorkerMessage.bind(this));
       
-      // Listen for service worker updates
-      this.registration.addEventListener('updatefound', () => {
-        const newWorker = this.registration?.installing;
-        if (newWorker) {
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // New service worker is available
-              this.notifyUpdate();
-            }
-          });
-        }
-      });
+      // Enhanced update detection
+      this.setupUpdateDetection();
+      
+      // Check for updates periodically (every 30 minutes)
+      this.setupPeriodicUpdateCheck();
 
       console.log('Service Worker initialized successfully');
     } catch (error) {
       console.error('Failed to initialize Service Worker:', error);
+    }
+  }
+
+  /**
+   * Setup comprehensive update detection
+   */
+  private setupUpdateDetection(): void {
+    if (!this.registration) return;
+
+    // Listen for service worker updates
+    this.registration.addEventListener('updatefound', () => {
+      const newWorker = this.registration?.installing;
+      if (newWorker) {
+        console.log('New service worker found, installing...');
+        
+        newWorker.addEventListener('statechange', () => {
+          console.log('Service worker state changed:', newWorker.state);
+          
+          switch (newWorker.state) {
+            case 'installed':
+              if (navigator.serviceWorker.controller) {
+                // New service worker is available
+                console.log('New service worker installed, update available');
+                this.notifyUpdate();
+              } else {
+                // First time installation
+                console.log('Service worker installed for the first time');
+              }
+              break;
+            case 'activated':
+              console.log('New service worker activated');
+              break;
+            case 'redundant':
+              console.log('Service worker became redundant');
+              break;
+          }
+        });
+      }
+    });
+
+    // Listen for controller changes (when new SW takes control)
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      console.log('Service worker controller changed');
+      // Reload the page to use the new service worker
+      if (!this.isRefreshing) {
+        this.isRefreshing = true;
+        window.location.reload();
+      }
+    });
+
+    // Check if there's already a waiting service worker
+    if (this.registration.waiting) {
+      console.log('Service worker is waiting, update available');
+      this.notifyUpdate();
+    }
+  }
+
+  /**
+   * Setup periodic update checks
+   */
+  private setupPeriodicUpdateCheck(): void {
+    // Check for updates every 30 minutes
+    setInterval(() => {
+      this.checkForUpdates();
+    }, 30 * 60 * 1000);
+
+    // Also check when the page becomes visible
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        this.checkForUpdates();
+      }
+    });
+  }
+
+  /**
+   * Manually check for service worker updates
+   */
+  async checkForUpdates(): Promise<boolean> {
+    if (!this.registration) {
+      return false;
+    }
+
+    try {
+      console.log('Checking for service worker updates...');
+      await this.registration.update();
+      
+      // Check if there's a waiting worker after update
+      if (this.registration.waiting) {
+        console.log('Update found after manual check');
+        this.notifyUpdate();
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Failed to check for updates:', error);
+      return false;
     }
   }
 
@@ -131,17 +223,7 @@ export class ServiceWorkerManager {
         icon: '/icon-192.svg',
         badge: '/icon-192.svg',
         tag: 'app-update',
-        requireInteraction: true,
-        actions: [
-          {
-            action: 'refresh',
-            title: 'Refresh Now'
-          },
-          {
-            action: 'dismiss',
-            title: 'Later'
-          }
-        ]
+        requireInteraction: true
       });
     }
   }
@@ -216,8 +298,11 @@ export class ServiceWorkerManager {
     }
 
     try {
-      await this.registration.sync.register(tag);
-      console.log('Background sync registered:', tag);
+      const syncManager = (this.registration as any).sync;
+      if (syncManager) {
+        await syncManager.register(tag);
+        console.log('Background sync registered:', tag);
+      }
     } catch (error) {
       console.error('Failed to register background sync:', error);
     }
@@ -281,7 +366,7 @@ export class ServiceWorkerManager {
         throw new Error('Push notification permission denied');
       }
 
-      const options: PushSubscriptionOptions = {
+      const options: any = {
         userVisibleOnly: true,
       };
 
@@ -341,29 +426,40 @@ export class ServiceWorkerManager {
    * Notify user of service worker update
    */
   private notifyUpdate(): void {
+    console.log('Notifying user of service worker update');
+    
     // Create custom event for app to handle
+    const updateStatus = this.getUpdateStatus();
     const event = new CustomEvent('sw-update-available', {
-      detail: { registration: this.registration }
+      detail: { 
+        registration: this.registration,
+        updateStatus 
+      }
     });
     window.dispatchEvent(event);
 
-    // Show notification
+    // Show notification if supported
     this.showNotification('App Update Available', {
-      body: 'A new version of the app is available. Refresh to update.',
+      body: 'A new version of the Password Manager is available. Tap to update.',
       icon: '/icon-192.svg',
       badge: '/icon-192.svg',
       tag: 'app-update',
       requireInteraction: true,
-      actions: [
-        {
-          action: 'refresh',
-          title: 'Refresh Now'
-        },
-        {
-          action: 'dismiss',
-          title: 'Later'
-        }
-      ]
+      // Note: actions are not supported in all browsers
+      ...(typeof window !== 'undefined' && 'Notification' in window && 'actions' in Notification.prototype ? {
+        actions: [
+          {
+            action: 'update',
+            title: 'Update Now',
+            icon: '/icon-192.svg'
+          },
+          {
+            action: 'dismiss',
+            title: 'Later',
+            icon: '/icon-192.svg'
+          }
+        ]
+      } : {})
     });
   }
 
@@ -394,15 +490,73 @@ export class ServiceWorkerManager {
     }
 
     try {
+      console.log('Updating service worker...');
+      
+      // If there's a waiting worker, activate it immediately
+      if (this.registration.waiting) {
+        console.log('Activating waiting service worker');
+        this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        return;
+      }
+
+      // Otherwise, check for updates
       await this.registration.update();
       
-      // Skip waiting and claim clients
+      // If update found a waiting worker, activate it
       if (this.registration.waiting) {
         this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
       }
     } catch (error) {
       console.error('Failed to update service worker:', error);
+      throw error;
     }
+  }
+
+  /**
+   * Skip waiting and activate new service worker immediately
+   */
+  async skipWaitingAndActivate(): Promise<void> {
+    if (!this.registration?.waiting) {
+      console.warn('No waiting service worker to activate');
+      return;
+    }
+
+    try {
+      console.log('Skipping waiting and activating new service worker');
+      this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      
+      // The controllerchange event will handle the reload
+    } catch (error) {
+      console.error('Failed to skip waiting:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get update status information
+   */
+  getUpdateStatus(): {
+    hasUpdate: boolean;
+    isWaiting: boolean;
+    isInstalling: boolean;
+    currentVersion?: string;
+    newVersion?: string;
+  } {
+    if (!this.registration) {
+      return {
+        hasUpdate: false,
+        isWaiting: false,
+        isInstalling: false,
+      };
+    }
+
+    return {
+      hasUpdate: !!this.registration.waiting || !!this.registration.installing,
+      isWaiting: !!this.registration.waiting,
+      isInstalling: !!this.registration.installing,
+      currentVersion: this.registration.active?.scriptURL,
+      newVersion: this.registration.waiting?.scriptURL || this.registration.installing?.scriptURL,
+    };
   }
 
   /**

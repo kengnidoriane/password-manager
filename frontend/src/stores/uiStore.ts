@@ -25,6 +25,7 @@ interface UIState {
   setTheme: (theme: Theme) => void;
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
+  closeSidebar: () => void;
   addNotification: (notification: Omit<Notification, 'id'>) => void;
   removeNotification: (id: string) => void;
   setOnlineStatus: (online: boolean) => void;
@@ -45,6 +46,8 @@ export const useUIStore = create<UIState>()(
       })),
 
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
+
+      closeSidebar: () => set({ sidebarOpen: false }),
 
       addNotification: (notification) => set((state) => ({
         notifications: [
