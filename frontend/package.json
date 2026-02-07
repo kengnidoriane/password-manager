@@ -9,7 +9,9 @@
     "lint": "eslint",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:a11y": "jest --testPathPatterns=\"(aria-labels|keyboard-navigation|wcag-contrast|form-label-association|multi-modal-feedback|screenReaderService|responsive)\"",
+    "test:a11y:watch": "jest --testPathPatterns=\"(aria-labels|keyboard-navigation|wcag-contrast|form-label-association|multi-modal-feedback|screenReaderService|responsive)\" --watch"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
