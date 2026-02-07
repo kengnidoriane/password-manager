@@ -310,7 +310,7 @@ export function RegisterForm() {
           htmlFor="email"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          Email
+          Email <span className="text-red-500" aria-label="required">*</span>
         </label>
         <div className="mt-1">
           <input
@@ -318,12 +318,16 @@ export function RegisterForm() {
             id="email"
             type="email"
             autoComplete="email"
+            required
+            aria-required="true"
+            aria-invalid={!!errors.email}
+            aria-describedby={errors.email ? 'email-error' : undefined}
             className={`block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm ${getTouchTargetClasses()}`}
             placeholder="you@example.com"
           />
         </div>
         {errors.email && (
-          <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+          <p id="email-error" role="alert" aria-live="polite" className="mt-1 text-sm text-red-600 dark:text-red-400">
             {errors.email.message}
           </p>
         )}
@@ -335,7 +339,7 @@ export function RegisterForm() {
           htmlFor="masterPassword"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          Master Password
+          Master Password <span className="text-red-500" aria-label="required">*</span>
         </label>
         <div className="relative mt-1">
           <input
@@ -343,6 +347,13 @@ export function RegisterForm() {
             id="masterPassword"
             type={showPassword ? 'text' : 'password'}
             autoComplete="new-password"
+            required
+            aria-required="true"
+            aria-invalid={!!errors.masterPassword}
+            aria-describedby={[
+              errors.masterPassword ? 'masterPassword-error' : undefined,
+              passwordStrength ? 'masterPassword-strength' : undefined
+            ].filter(Boolean).join(' ') || undefined}
             className={`block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm ${getTouchTargetClasses()}`}
             placeholder="Create a strong master password"
           />
@@ -390,14 +401,14 @@ export function RegisterForm() {
           </button>
         </div>
         {errors.masterPassword && (
-          <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+          <p id="masterPassword-error" role="alert" aria-live="polite" className="mt-1 text-sm text-red-600 dark:text-red-400">
             {errors.masterPassword.message}
           </p>
         )}
 
         {/* Password Strength Meter */}
         {passwordStrength && (
-          <div className="mt-2">
+          <div id="masterPassword-strength" className="mt-2" aria-live="polite">
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600 dark:text-gray-400">Password Strength</span>
               <span className={`font-medium ${
@@ -418,6 +429,11 @@ export function RegisterForm() {
                   passwordStrength.score >= 40 ? 'bg-orange-500' : 'bg-red-500'
                 }`}
                 style={{ width: `${passwordStrength.score}%` }}
+                role="progressbar"
+                aria-valuenow={passwordStrength.score}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="Password strength"
               />
             </div>
             <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
@@ -444,7 +460,7 @@ export function RegisterForm() {
           htmlFor="confirmPassword"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          Confirm Master Password
+          Confirm Master Password <span className="text-red-500" aria-label="required">*</span>
         </label>
         <div className="relative mt-1">
           <input
@@ -452,6 +468,10 @@ export function RegisterForm() {
             id="confirmPassword"
             type={showConfirmPassword ? 'text' : 'password'}
             autoComplete="new-password"
+            required
+            aria-required="true"
+            aria-invalid={!!errors.confirmPassword}
+            aria-describedby={errors.confirmPassword ? 'confirmPassword-error' : undefined}
             className={`block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm ${getTouchTargetClasses()}`}
             placeholder="Confirm your master password"
           />
@@ -499,7 +519,7 @@ export function RegisterForm() {
           </button>
         </div>
         {errors.confirmPassword && (
-          <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+          <p id="confirmPassword-error" role="alert" aria-live="polite" className="mt-1 text-sm text-red-600 dark:text-red-400">
             {errors.confirmPassword.message}
           </p>
         )}

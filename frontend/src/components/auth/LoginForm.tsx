@@ -220,7 +220,7 @@ export function LoginForm() {
           htmlFor="email"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          Email
+          Email <span className="text-red-500" aria-label="required">*</span>
         </label>
         <div className="mt-1">
           <input
@@ -228,12 +228,16 @@ export function LoginForm() {
             id="email"
             type="email"
             autoComplete="email"
+            required
+            aria-required="true"
+            aria-invalid={!!errors.email}
+            aria-describedby={errors.email ? 'email-error' : undefined}
             className={`block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm ${getTouchTargetClasses()}`}
             placeholder="you@example.com"
           />
         </div>
         {errors.email && (
-          <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+          <p id="email-error" role="alert" aria-live="polite" className="mt-1 text-sm text-red-600 dark:text-red-400">
             {errors.email.message}
           </p>
         )}
@@ -245,7 +249,7 @@ export function LoginForm() {
           htmlFor="masterPassword"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          Master Password
+          Master Password <span className="text-red-500" aria-label="required">*</span>
         </label>
         <div className="relative mt-1">
           <input
@@ -253,6 +257,10 @@ export function LoginForm() {
             id="masterPassword"
             type={showPassword ? 'text' : 'password'}
             autoComplete="current-password"
+            required
+            aria-required="true"
+            aria-invalid={!!errors.masterPassword}
+            aria-describedby={errors.masterPassword ? 'masterPassword-error' : undefined}
             className={`block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm ${getTouchTargetClasses()}`}
             placeholder="Enter your master password"
           />
@@ -300,7 +308,7 @@ export function LoginForm() {
           </button>
         </div>
         {errors.masterPassword && (
-          <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+          <p id="masterPassword-error" role="alert" aria-live="polite" className="mt-1 text-sm text-red-600 dark:text-red-400">
             {errors.masterPassword.message}
           </p>
         )}
@@ -312,7 +320,7 @@ export function LoginForm() {
           htmlFor="twoFactorCode"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          Two-Factor Code {requires2FA && <span className="text-red-500">*</span>}
+          Two-Factor Code {requires2FA && <span className="text-red-500" aria-label="required">*</span>}
         </label>
         <div className="mt-1">
           <input
@@ -322,13 +330,16 @@ export function LoginForm() {
             inputMode="numeric"
             pattern="[0-9]*"
             autoComplete="one-time-code"
+            aria-required={requires2FA}
+            aria-invalid={!!errors.twoFactorCode}
+            aria-describedby={errors.twoFactorCode ? 'twoFactorCode-error' : undefined}
             className={`block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm ${getTouchTargetClasses()}`}
             placeholder="000000"
             maxLength={6}
           />
         </div>
         {errors.twoFactorCode && (
-          <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+          <p id="twoFactorCode-error" role="alert" aria-live="polite" className="mt-1 text-sm text-red-600 dark:text-red-400">
             {errors.twoFactorCode.message}
           </p>
         )}

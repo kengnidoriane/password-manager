@@ -145,17 +145,21 @@ export function CredentialForm({
             htmlFor="title"
             className="block text-sm font-medium text-gray-700 dark:text-gray-300"
           >
-            Title *
+            Title <span className="text-red-500" aria-label="required">*</span>
           </label>
           <input
             {...register('title')}
             id="title"
             type="text"
+            required
+            aria-required="true"
+            aria-invalid={!!errors.title}
+            aria-describedby={errors.title ? 'title-error' : undefined}
             className={`mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm ${getTouchTargetClasses()}`}
             placeholder="e.g., Gmail, Facebook, Work Email"
           />
           {errors.title && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+            <p id="title-error" role="alert" aria-live="polite" className="mt-1 text-sm text-red-600 dark:text-red-400">
               {errors.title.message}
             </p>
           )}
@@ -167,18 +171,22 @@ export function CredentialForm({
             htmlFor="username"
             className="block text-sm font-medium text-gray-700 dark:text-gray-300"
           >
-            Username *
+            Username <span className="text-red-500" aria-label="required">*</span>
           </label>
           <input
             {...register('username')}
             id="username"
             type="text"
             autoComplete="username"
+            required
+            aria-required="true"
+            aria-invalid={!!errors.username}
+            aria-describedby={errors.username ? 'username-error' : undefined}
             className={`mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm ${getTouchTargetClasses()}`}
             placeholder="username or email"
           />
           {errors.username && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+            <p id="username-error" role="alert" aria-live="polite" className="mt-1 text-sm text-red-600 dark:text-red-400">
               {errors.username.message}
             </p>
           )}
@@ -191,13 +199,14 @@ export function CredentialForm({
               htmlFor="password"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300"
             >
-              Password *
+              Password <span className="text-red-500" aria-label="required">*</span>
             </label>
             <button
               type="button"
               onClick={() => setShowPasswordGenerator(!showPasswordGenerator)}
               className="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400"
               aria-label="Toggle password generator"
+              aria-expanded={showPasswordGenerator}
             >
               Generate Password
             </button>
@@ -208,6 +217,10 @@ export function CredentialForm({
               id="password"
               type={showPassword ? 'text' : 'password'}
               autoComplete="new-password"
+              required
+              aria-required="true"
+              aria-invalid={!!errors.password}
+              aria-describedby={errors.password ? 'password-error' : undefined}
               className={`block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white sm:text-sm font-mono ${getTouchTargetClasses()}`}
               placeholder="Enter or generate a strong password"
             />
@@ -245,76 +258,93 @@ export function CredentialForm({
             </button>
           </div>
           {errors.password && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+            <p id="password-error" role="alert" aria-live="polite" className="mt-1 text-sm text-red-600 dark:text-red-400">
               {errors.password.message}
             </p>
           )}
 
           {/* Password Generator */}
           {showPasswordGenerator && (
-            <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
-              <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+            <fieldset className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800" aria-describedby="password-generator-description">
+              <legend className="text-sm font-medium text-gray-900 dark:text-white mb-3">
                 Password Generator
-              </h4>
+              </legend>
+              <p id="password-generator-description" className="sr-only">
+                Configure password generation options including length and character types
+              </p>
               
               <div className="space-y-3">
                 {/* Length */}
                 <div>
-                  <label className="block text-sm text-gray-700 dark:text-gray-300">
+                  <label htmlFor="password-length" className="block text-sm text-gray-700 dark:text-gray-300">
                     Length: {generatorOptions.length}
                   </label>
                   <input
+                    id="password-length"
                     type="range"
                     min="8"
                     max="128"
                     value={generatorOptions.length}
                     onChange={(e) => setGeneratorOptions(prev => ({ ...prev, length: parseInt(e.target.value) }))}
                     className="w-full"
+                    aria-label={`Password length: ${generatorOptions.length} characters`}
+                    aria-valuemin={8}
+                    aria-valuemax={128}
+                    aria-valuenow={generatorOptions.length}
                   />
                 </div>
 
                 {/* Character Types */}
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={generatorOptions.includeUppercase}
-                      onChange={(e) => setGeneratorOptions(prev => ({ ...prev, includeUppercase: e.target.checked }))}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">A-Z</span>
-                  </label>
-                  
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={generatorOptions.includeLowercase}
-                      onChange={(e) => setGeneratorOptions(prev => ({ ...prev, includeLowercase: e.target.checked }))}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">a-z</span>
-                  </label>
-                  
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={generatorOptions.includeNumbers}
-                      onChange={(e) => setGeneratorOptions(prev => ({ ...prev, includeNumbers: e.target.checked }))}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">0-9</span>
-                  </label>
-                  
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={generatorOptions.includeSymbols}
-                      onChange={(e) => setGeneratorOptions(prev => ({ ...prev, includeSymbols: e.target.checked }))}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">!@#$</span>
-                  </label>
-                </div>
+                <fieldset>
+                  <legend className="block text-sm text-gray-700 dark:text-gray-300 mb-2">
+                    Character Types
+                  </legend>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={generatorOptions.includeUppercase}
+                        onChange={(e) => setGeneratorOptions(prev => ({ ...prev, includeUppercase: e.target.checked }))}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        aria-label="Include uppercase letters A-Z"
+                      />
+                      <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">A-Z</span>
+                    </label>
+                    
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={generatorOptions.includeLowercase}
+                        onChange={(e) => setGeneratorOptions(prev => ({ ...prev, includeLowercase: e.target.checked }))}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        aria-label="Include lowercase letters a-z"
+                      />
+                      <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">a-z</span>
+                    </label>
+                    
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={generatorOptions.includeNumbers}
+                        onChange={(e) => setGeneratorOptions(prev => ({ ...prev, includeNumbers: e.target.checked }))}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        aria-label="Include numbers 0-9"
+                      />
+                      <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">0-9</span>
+                    </label>
+                    
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={generatorOptions.includeSymbols}
+                        onChange={(e) => setGeneratorOptions(prev => ({ ...prev, includeSymbols: e.target.checked }))}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        aria-label="Include symbols like !@#$"
+                      />
+                      <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">!@#$</span>
+                    </label>
+                  </div>
+                </fieldset>
 
                 <label className="flex items-center">
                   <input
@@ -322,6 +352,7 @@ export function CredentialForm({
                     checked={generatorOptions.excludeAmbiguous}
                     onChange={(e) => setGeneratorOptions(prev => ({ ...prev, excludeAmbiguous: e.target.checked }))}
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    aria-label="Exclude ambiguous characters like 0, O, l, I"
                   />
                   <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
                     Exclude ambiguous characters (0, O, l, I)
@@ -337,7 +368,7 @@ export function CredentialForm({
                   Generate Password
                 </button>
               </div>
-            </div>
+            </fieldset>
           )}
         </div>
 
