@@ -10,6 +10,7 @@
 import { useState, useMemo } from 'react';
 import { useVault } from '@/hooks/useVault';
 import { useSearch } from '@/hooks/useSearch';
+import { useURLDetection } from '@/hooks/useURLDetection';
 import { useResponsiveClasses } from '@/hooks/useResponsive';
 import { CredentialCard } from './CredentialCard';
 import { SearchBar } from './SearchBar';
@@ -48,6 +49,16 @@ export function VaultList({
     isEmpty
   } = useSearch();
 
+  const {
+    currentURL,
+    isSupported: isURLDetectionSupported,
+    matchingCredentials,
+    hasMatches,
+    isCredentialMatching,
+    getMatchScore,
+    getCurrentDomain
+  } = useURLDetection();
+
   const { isMobile, isTablet } = useResponsiveClasses();
 
   const [sortBy, setSortBy] = useState<'name' | 'lastUsed' | 'created'>('name');
@@ -72,9 +83,20 @@ export function VaultList({
     return filtered;
   }, [credentials, selectedFolderId, selectedTags]);
 
-  // Sort credentials based on selected criteria
+  // Sort credentials based on selected criteria and URL matches
   const sortedCredentials = useMemo(() => {
     const sorted = [...filteredCredentials].sort((a, b) => {
+      // First, prioritize URL matches if URL detection is supported and we have matches
+      if (isURLDetectionSupported && hasMatches()) {
+        const aMatchScore = getMatchScore(a.id);
+        const bMatchScore = getMatchScore(b.id);
+        
+        if (aMatchScore !== bMatchScore) {
+          return bMatchScore - aMatchScore; // Higher match score first
+        }
+      }
+      
+      // Then apply regular sorting
       let comparison = 0;
       
       switch (sortBy) {
@@ -95,7 +117,7 @@ export function VaultList({
     });
     
     return sorted;
-  }, [filteredCredentials, sortBy, sortOrder]);
+  }, [filteredCredentials, sortBy, sortOrder, isURLDetectionSupported, hasMatches, getMatchScore]);
 
   const handleFolderFilter = (folderId: string | null) => {
     setSelectedFolder(folderId);
@@ -152,6 +174,41 @@ export function VaultList({
         placeholder="Search credentials and notes..."
         className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900"
       />
+
+      {/* URL Detection Status */}
+      {isURLDetectionSupported && currentURL && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                Current site: {getCurrentDomain()}
+              </p>
+              {hasMatches() && (
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  {matchingCredentials.length} matching credential{matchingCredentials.length !== 1 ? 's' : ''} found
+                </p>
+              )}
+            </div>
+            {hasMatches() && (
+              <div className="flex-shrink-0">
+                <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-800 dark:text-blue-200">
+                  {matchingCredentials.length} match{matchingCredentials.length !== 1 ? 'es' : ''}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Additional Filters */}
       <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">

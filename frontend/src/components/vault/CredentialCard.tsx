@@ -11,6 +11,7 @@ import { useState, useCallback } from 'react';
 import { Credential, Folder, Tag } from '@/lib/db';
 import { useVault } from '@/hooks/useVault';
 import { useClipboard } from '@/hooks/useClipboard';
+import { useURLDetection } from '@/hooks/useURLDetection';
 import { useSwipeGesture, useResponsiveClasses } from '@/hooks/useResponsive';
 
 interface CredentialCardProps {
@@ -34,9 +35,15 @@ export function CredentialCard({
 }: CredentialCardProps) {
   const { copyToClipboard } = useClipboard();
   const { isMobile, getTouchTargetClasses } = useResponsiveClasses();
+  const { isCredentialMatching, getMatchScore, getMatchType } = useURLDetection();
   const [showPassword, setShowPassword] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [showSwipeActions, setShowSwipeActions] = useState(false);
+
+  // Check if this credential matches the current URL
+  const urlMatch = isCredentialMatching(credential.id);
+  const matchScore = getMatchScore(credential.id);
+  const matchType = getMatchType(credential.id);
 
   // Get folder name
   const folder = folders.find(f => f.id === credential.folderId);
@@ -142,7 +149,13 @@ export function CredentialCard({
       className={`
         relative rounded-lg border p-4 transition-all cursor-pointer overflow-hidden
         ${isMobile ? 'mobile-card' : ''}
-        ${isSelected
+        ${urlMatch
+          ? matchType === 'exact'
+            ? 'border-green-500 bg-green-50 shadow-md ring-2 ring-green-200 dark:border-green-400 dark:bg-green-900/20 dark:ring-green-800'
+            : matchType === 'domain'
+            ? 'border-blue-500 bg-blue-50 shadow-sm ring-1 ring-blue-200 dark:border-blue-400 dark:bg-blue-900/20 dark:ring-blue-800'
+            : 'border-orange-500 bg-orange-50 shadow-sm ring-1 ring-orange-200 dark:border-orange-400 dark:bg-orange-900/20 dark:ring-orange-800'
+          : isSelected
           ? 'border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-900/20'
           : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700'
         }
