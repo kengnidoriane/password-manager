@@ -101,7 +101,7 @@ export function SearchBar({
   }, []);
 
   return (
-    <div className={`space-y-4 ${className}`} role="search">
+    <div id="search" className={`space-y-4 ${className}`} role="search">
       {/* Main Search Input */}
       <div className="relative">
         <div className="absolute inset-y-0 left-0 flex items-center pl-3" aria-hidden="true">

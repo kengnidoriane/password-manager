@@ -15,7 +15,10 @@ export function Header() {
   const { isMobile, getTouchTargetClasses } = useResponsiveClasses();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <header 
+      id="navigation"
+      className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900"
+    >
       <div className={`flex h-16 items-center justify-between ${isMobile ? 'px-4' : 'px-6'}`}>
         {/* Left section */}
         <div className="flex items-center gap-2 md:gap-4">

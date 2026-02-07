@@ -9,6 +9,8 @@ import { Sidebar } from './Sidebar';
 import { NotificationContainer } from '../ui/NotificationContainer';
 import { ClipboardStatus } from '../ui/ClipboardStatus';
 import { ResponsiveLayout } from './ResponsiveLayout';
+import { SkipNavigation } from './SkipNavigation';
+import { KeyboardShortcutsHelp } from '../ui/KeyboardShortcutsHelp';
 
 /**
  * Main Layout Component
@@ -44,12 +46,17 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   return (
     <div className="flex h-screen flex-col">
+      <SkipNavigation />
       <Header />
       
       <div className="flex flex-1 overflow-hidden">
         {isAuthenticated && <Sidebar />}
         
-        <main className={`flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-950 ${isMobile ? 'w-full' : ''}`}>
+        <main 
+          id="main-content"
+          tabIndex={-1}
+          className={`flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-950 ${isMobile ? 'w-full' : ''}`}
+        >
           <ResponsiveLayout>
             {children}
           </ResponsiveLayout>
@@ -58,6 +65,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
       <NotificationContainer />
       <ClipboardStatus />
+      <KeyboardShortcutsHelp />
     </div>
   );
 }
