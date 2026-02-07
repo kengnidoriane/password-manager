@@ -249,6 +249,7 @@ export function CredentialCard({
               }}
               className="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
               title="Share credential"
+              aria-label="Share credential"
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -266,6 +267,7 @@ export function CredentialCard({
               }}
               className="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
               title="Edit credential"
+              aria-label="Edit credential"
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -296,6 +298,7 @@ export function CredentialCard({
             onClick={handleUsernameClick}
             className={`ml-2 rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 ${getTouchTargetClasses()}`}
             title="Copy username"
+            aria-label="Copy username"
           >
             {copiedField === 'username' ? (
               <svg className="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -334,6 +337,7 @@ export function CredentialCard({
               onClick={togglePasswordVisibility}
               className={`rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 ${getTouchTargetClasses()}`}
               title={showPassword ? 'Hide password' : 'Show password'}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
               {showPassword ? (
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -365,6 +369,7 @@ export function CredentialCard({
               onClick={handlePasswordClick}
               className={`rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 ${getTouchTargetClasses()}`}
               title="Copy password"
+              aria-label="Copy password"
             >
               {copiedField === 'password' ? (
                 <svg className="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -404,6 +409,7 @@ export function CredentialCard({
               onClick={handleUrlClick}
               className={`ml-2 rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 ${getTouchTargetClasses()}`}
               title="Copy URL"
+              aria-label="Copy URL"
             >
               {copiedField === 'url' ? (
                 <svg className="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -443,6 +449,7 @@ export function CredentialCard({
               onClick={handleNotesClick}
               className={`ml-2 rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 ${getTouchTargetClasses()}`}
               title="Copy notes"
+              aria-label="Copy notes"
             >
               {copiedField === 'notes' ? (
                 <svg className="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

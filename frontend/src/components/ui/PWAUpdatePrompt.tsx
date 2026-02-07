@@ -58,11 +58,17 @@ export function PWAUpdatePrompt() {
   };
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 md:left-auto md:right-4 md:w-96">
+    <aside 
+      className="fixed bottom-4 left-4 right-4 z-50 md:left-auto md:right-4 md:w-96"
+      role="dialog"
+      aria-labelledby="pwa-update-title"
+      aria-describedby="pwa-update-description"
+      aria-live="polite"
+    >
       <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 animate-slide-up">
         <div className="flex items-start">
           {/* Update Icon */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0" aria-hidden="true">
             <div className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-100">
               {isUpdating ? (
                 <svg
@@ -105,10 +111,10 @@ export function PWAUpdatePrompt() {
 
           {/* Content */}
           <div className="ml-3 flex-1">
-            <h3 className="text-sm font-medium text-gray-900">
+            <h3 id="pwa-update-title" className="text-sm font-medium text-gray-900">
               {isUpdating ? 'Updating App...' : 'App Update Available'}
             </h3>
-            <p className="mt-1 text-sm text-gray-500">
+            <p id="pwa-update-description" className="mt-1 text-sm text-gray-500">
               {isUpdating 
                 ? 'Installing the latest version. This will only take a moment.'
                 : 'A new version of the Password Manager is ready to install with improvements and bug fixes.'
@@ -117,7 +123,7 @@ export function PWAUpdatePrompt() {
 
             {/* Update Status Details */}
             {showDetails && updateStatus && (
-              <div className="mt-2 text-xs text-gray-400 space-y-1">
+              <div className="mt-2 text-xs text-gray-400 space-y-1" role="status">
                 <div>Status: {updateStatus.isWaiting ? 'Ready to install' : 'Installing...'}</div>
                 {updateStatus.currentVersion && (
                   <div className="truncate">Current: {updateStatus.currentVersion.split('/').pop()}</div>
@@ -135,6 +141,7 @@ export function PWAUpdatePrompt() {
                   onClick={handleApplyUpdate}
                   disabled={isUpdating}
                   className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  aria-label={isUpdating ? "Updating app, please wait" : "Update app now"}
                 >
                   {isUpdating ? (
                     <>
@@ -143,6 +150,7 @@ export function PWAUpdatePrompt() {
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
                         viewBox="0 0 24 24"
+                        aria-hidden="true"
                       >
                         <circle
                           className="opacity-25"
@@ -169,6 +177,7 @@ export function PWAUpdatePrompt() {
                   <button
                     onClick={dismissUpdate}
                     className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                    aria-label="Dismiss update, remind me later"
                   >
                     Later
                   </button>
@@ -180,6 +189,8 @@ export function PWAUpdatePrompt() {
                 <button
                   onClick={() => setShowDetails(!showDetails)}
                   className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                  aria-label={showDetails ? "Hide update details" : "Show update details"}
+                  aria-expanded={showDetails}
                 >
                   {showDetails ? 'Hide' : 'Details'}
                 </button>
@@ -188,7 +199,7 @@ export function PWAUpdatePrompt() {
 
             {/* Progress indicator */}
             {isUpdating && (
-              <div className="mt-3">
+              <div className="mt-3" role="progressbar" aria-label="Update progress" aria-valuenow={100} aria-valuemin={0} aria-valuemax={100}>
                 <div className="w-full bg-gray-200 rounded-full h-1">
                   <div className="bg-blue-600 h-1 rounded-full animate-pulse" style={{ width: '100%' }}></div>
                 </div>
@@ -202,9 +213,10 @@ export function PWAUpdatePrompt() {
               <button
                 onClick={dismissUpdate}
                 className="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                aria-label="Close update notification"
               >
                 <span className="sr-only">Close</span>
-                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                   <path
                     fillRule="evenodd"
                     d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
@@ -216,6 +228,6 @@ export function PWAUpdatePrompt() {
           )}
         </div>
       </div>
-    </div>
+    </aside>
   );
 }

@@ -104,6 +104,7 @@ export function GeneratorConfig({ options, onChange, disabled = false }: Generat
               onChange={handleCharacterTypeChange('includeUppercase')}
               disabled={disabled}
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50"
+              aria-label="Include uppercase letters"
             />
             <div className="flex-1">
               <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -123,6 +124,7 @@ export function GeneratorConfig({ options, onChange, disabled = false }: Generat
               onChange={handleCharacterTypeChange('includeLowercase')}
               disabled={disabled}
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50"
+              aria-label="Include lowercase letters"
             />
             <div className="flex-1">
               <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -142,6 +144,7 @@ export function GeneratorConfig({ options, onChange, disabled = false }: Generat
               onChange={handleCharacterTypeChange('includeNumbers')}
               disabled={disabled}
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50"
+              aria-label="Include numbers"
             />
             <div className="flex-1">
               <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -161,6 +164,7 @@ export function GeneratorConfig({ options, onChange, disabled = false }: Generat
               onChange={handleCharacterTypeChange('includeSymbols')}
               disabled={disabled}
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50"
+              aria-label="Include symbols"
             />
             <div className="flex-1">
               <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -194,6 +198,7 @@ export function GeneratorConfig({ options, onChange, disabled = false }: Generat
             onChange={handleCharacterTypeChange('excludeAmbiguous')}
             disabled={disabled}
             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50"
+            aria-label="Exclude ambiguous characters"
           />
           <div className="flex-1">
             <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -225,6 +230,7 @@ export function GeneratorConfig({ options, onChange, disabled = false }: Generat
             })}
             disabled={disabled}
             className="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
+            aria-label="Apply strong password preset: 16 characters with all character types"
           >
             Strong (16)
           </button>
@@ -241,6 +247,7 @@ export function GeneratorConfig({ options, onChange, disabled = false }: Generat
             })}
             disabled={disabled}
             className="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
+            aria-label="Apply very strong password preset: 20 characters with all character types"
           >
             Very Strong (20)
           </button>
@@ -257,6 +264,7 @@ export function GeneratorConfig({ options, onChange, disabled = false }: Generat
             })}
             disabled={disabled}
             className="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
+            aria-label="Apply memorable password preset: 16 characters without symbols, excluding ambiguous characters"
           >
             Memorable (16)
           </button>

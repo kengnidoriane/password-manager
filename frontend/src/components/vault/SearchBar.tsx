@@ -101,10 +101,10 @@ export function SearchBar({
   }, []);
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div className={`space-y-4 ${className}`} role="search">
       {/* Main Search Input */}
       <div className="relative">
-        <div className="absolute inset-y-0 left-0 flex items-center pl-3">
+        <div className="absolute inset-y-0 left-0 flex items-center pl-3" aria-hidden="true">
           <svg
             className={`h-5 w-5 transition-colors ${
               isSearching 
@@ -142,6 +142,11 @@ export function SearchBar({
           onKeyDown={handleKeyDown}
           onFocus={() => setShowSuggestions(query.length > 1 && suggestions.length > 0)}
           className="block w-full rounded-lg border border-gray-300 pl-10 pr-12 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-400"
+          aria-label="Search credentials and secure notes"
+          aria-describedby={hasQuery ? "search-results-summary" : undefined}
+          aria-autocomplete="list"
+          aria-controls={showSuggestions ? "search-suggestions" : undefined}
+          aria-expanded={showSuggestions}
         />
 
         {/* Clear Button */}
@@ -149,9 +154,9 @@ export function SearchBar({
           <button
             onClick={handleClear}
             className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            title="Clear search"
+            aria-label="Clear search"
           >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -165,7 +170,10 @@ export function SearchBar({
         {/* Search Suggestions */}
         {showSuggestions && suggestions.length > 0 && (
           <div
+            id="search-suggestions"
             ref={suggestionsRef}
+            role="listbox"
+            aria-label="Search suggestions"
             className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-800"
           >
             <div className="py-1">
@@ -173,10 +181,12 @@ export function SearchBar({
                 <button
                   key={index}
                   onClick={() => handleSuggestionClick(suggestion)}
+                  role="option"
+                  aria-selected={false}
                   className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                 >
                   <div className="flex items-center">
-                    <svg className="mr-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="mr-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                     {suggestion}
@@ -193,12 +203,16 @@ export function SearchBar({
         <button
           onClick={() => setShowAdvanced(!showAdvanced)}
           className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+          aria-label={showAdvanced ? "Hide advanced search options" : "Show advanced search options"}
+          aria-expanded={showAdvanced}
+          aria-controls="advanced-search-options"
         >
           <svg
             className={`h-4 w-4 transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
+            aria-hidden="true"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
@@ -207,7 +221,13 @@ export function SearchBar({
 
         {/* Search Results Summary */}
         {hasQuery && (
-          <div className="text-sm text-gray-600 dark:text-gray-400">
+          <div 
+            id="search-results-summary"
+            className="text-sm text-gray-600 dark:text-gray-400"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
             {isSearching ? (
               'Searching...'
             ) : searchResults ? (
@@ -228,17 +248,22 @@ export function SearchBar({
 
       {/* Advanced Options Panel */}
       {showAdvanced && (
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
+        <div 
+          id="advanced-search-options"
+          className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800"
+        >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {/* Sort By */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="search-sort-by" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Sort by
               </label>
               <select
+                id="search-sort-by"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
                 className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                aria-label="Sort search results by"
               >
                 <option value="relevance">Relevance</option>
                 <option value="alphabetical">Alphabetical</option>
@@ -249,13 +274,15 @@ export function SearchBar({
 
             {/* Sort Order */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="search-sort-order" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Order
               </label>
               <select
+                id="search-sort-order"
                 value={sortOrder}
                 onChange={(e) => setSortOrder(e.target.value as any)}
                 className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                aria-label="Sort order"
               >
                 <option value="desc">
                   {sortBy === 'alphabetical' ? 'Z to A' : 'Newest First'}
@@ -268,33 +295,39 @@ export function SearchBar({
 
             {/* Include Types */}
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Search in
-              </label>
-              <div className="flex gap-4">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={includeCredentials}
-                    onChange={(e) => setIncludeCredentials(e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                  />
-                  <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                    Credentials
-                  </span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={includeNotes}
-                    onChange={(e) => setIncludeNotes(e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                  />
-                  <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                    Secure Notes
-                  </span>
-                </label>
-              </div>
+              <fieldset>
+                <legend className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Search in
+                </legend>
+                <div className="flex gap-4">
+                  <label className="flex items-center">
+                    <input
+                      id="search-include-credentials"
+                      type="checkbox"
+                      checked={includeCredentials}
+                      onChange={(e) => setIncludeCredentials(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                      aria-label="Include credentials in search"
+                    />
+                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                      Credentials
+                    </span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      id="search-include-notes"
+                      type="checkbox"
+                      checked={includeNotes}
+                      onChange={(e) => setIncludeNotes(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                      aria-label="Include secure notes in search"
+                    />
+                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                      Secure Notes
+                    </span>
+                  </label>
+                </div>
+              </fieldset>
             </div>
           </div>
         </div>

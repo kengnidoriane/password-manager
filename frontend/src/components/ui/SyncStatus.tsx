@@ -157,8 +157,14 @@ export const SyncStatus: React.FC<SyncStatusProps> = ({
   if (!showDetails) {
     // Compact view - just icon and status
     return (
-      <div className={`flex items-center space-x-2 ${className}`}>
-        {getSyncStatusIcon()}
+      <div 
+        className={`flex items-center space-x-2 ${className}`}
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        aria-label={`Sync status: ${getSyncStatusText()}`}
+      >
+        <span aria-hidden="true">{getSyncStatusIcon()}</span>
         <span className={`text-sm ${getSyncStatusColor()}`}>
           {getSyncStatusText()}
         </span>
@@ -168,13 +174,24 @@ export const SyncStatus: React.FC<SyncStatusProps> = ({
 
   // Detailed view
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 ${className}`}>
+    <section 
+      className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 ${className}`}
+      aria-labelledby="sync-status-heading"
+    >
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center space-x-2">
-          {getSyncStatusIcon()}
-          <span className={`font-medium ${getSyncStatusColor()}`}>
+        <div 
+          className="flex items-center space-x-2"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <span aria-hidden="true">{getSyncStatusIcon()}</span>
+          <h2 
+            id="sync-status-heading"
+            className={`font-medium ${getSyncStatusColor()}`}
+          >
             {getSyncStatusText()}
-          </span>
+          </h2>
         </div>
         
         {status.isOnline && !status.isSyncing && !isManualSyncing && (
@@ -182,45 +199,54 @@ export const SyncStatus: React.FC<SyncStatusProps> = ({
             onClick={handleManualSync}
             className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
             disabled={status.isSyncing || isManualSyncing}
+            aria-label="Manually trigger sync now"
           >
             Sync Now
           </button>
         )}
       </div>
 
-      <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+      <dl className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
         <div className="flex justify-between">
-          <span>Last sync:</span>
-          <span>{formatLastSyncTime(status.lastSyncTime)}</span>
+          <dt>Last sync:</dt>
+          <dd>{formatLastSyncTime(status.lastSyncTime)}</dd>
         </div>
         
         {status.pendingChanges > 0 && (
           <div className="flex justify-between">
-            <span>Pending changes:</span>
-            <span className="text-orange-500">{status.pendingChanges}</span>
+            <dt>Pending changes:</dt>
+            <dd className="text-orange-500" aria-label={`${status.pendingChanges} pending changes`}>
+              {status.pendingChanges}
+            </dd>
           </div>
         )}
         
         {status.conflicts.length > 0 && (
           <div className="flex justify-between">
-            <span>Conflicts:</span>
-            <span className="text-yellow-500">{status.conflicts.length}</span>
+            <dt>Conflicts:</dt>
+            <dd className="text-yellow-500" aria-label={`${status.conflicts.length} sync conflicts`}>
+              {status.conflicts.length}
+            </dd>
           </div>
         )}
         
         {status.error && (
-          <div className="text-red-500 text-xs mt-2">
+          <div 
+            className="text-red-500 text-xs mt-2"
+            role="alert"
+            aria-live="assertive"
+          >
             Error: {status.error}
           </div>
         )}
         
         <div className="flex justify-between">
-          <span>Status:</span>
-          <span className={status.isOnline ? 'text-green-500' : 'text-gray-500'}>
+          <dt>Status:</dt>
+          <dd className={status.isOnline ? 'text-green-500' : 'text-gray-500'}>
             {status.isOnline ? 'Online' : 'Offline'}
-          </span>
+          </dd>
         </div>
-      </div>
-    </div>
+      </dl>
+    </section>
   );
 };

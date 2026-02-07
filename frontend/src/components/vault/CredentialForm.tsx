@@ -125,6 +125,7 @@ export function CredentialForm({
         <button
           onClick={onCancel}
           className="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+          aria-label="Close form"
         >
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -196,6 +197,7 @@ export function CredentialForm({
               type="button"
               onClick={() => setShowPasswordGenerator(!showPasswordGenerator)}
               className="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400"
+              aria-label="Toggle password generator"
             >
               Generate Password
             </button>
@@ -213,6 +215,7 @@ export function CredentialForm({
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className={`absolute inset-y-0 right-0 flex items-center pr-3 ${getTouchTargetClasses()}`}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
               {showPassword ? (
                 <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -329,6 +332,7 @@ export function CredentialForm({
                   type="button"
                   onClick={handleGeneratePassword}
                   className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  aria-label="Generate password with selected options"
                 >
                   Generate Password
                 </button>
@@ -402,6 +406,8 @@ export function CredentialForm({
                       : 'bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700'
                   }`}
                   style={isSelected ? { backgroundColor: tag.color + '20', color: tag.color } : {}}
+                  aria-label={isSelected ? `Remove tag ${tag.name}` : `Add tag ${tag.name}`}
+                  aria-pressed={isSelected}
                 >
                   {tag.name}
                   {isSelected && (
@@ -439,6 +445,7 @@ export function CredentialForm({
               onClick={handleCreateTag}
               disabled={!newTagName.trim() || isCreatingTag}
               className="rounded-md bg-gray-600 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50"
+              aria-label="Create new tag"
             >
               {isCreatingTag ? 'Creating...' : 'Add Tag'}
             </button>
