@@ -2,10 +2,12 @@
 
 import { useEffect } from 'react';
 import { useUIStore } from '@/stores/uiStore';
+import { screenReaderService } from '@/services/screenReaderService';
 
 /**
  * Notification Container Component
- * Displays toast notifications
+ * Displays toast notifications with multi-modal feedback
+ * Requirements: 20.4 - Multi-modal feedback
  */
 
 export function NotificationContainer() {
@@ -13,6 +15,22 @@ export function NotificationContainer() {
 
   useEffect(() => {
     notifications.forEach((notification) => {
+      // Announce to screen readers
+      switch (notification.type) {
+        case 'success':
+          screenReaderService.announceSuccess(notification.message);
+          break;
+        case 'error':
+          screenReaderService.announceError(notification.message);
+          break;
+        case 'warning':
+          screenReaderService.announceWarning(notification.message);
+          break;
+        case 'info':
+          screenReaderService.announceInfo(notification.message);
+          break;
+      }
+
       const duration = notification.duration || 5000;
       const timer = setTimeout(() => {
         removeNotification(notification.id);
@@ -24,11 +42,34 @@ export function NotificationContainer() {
 
   if (notifications.length === 0) return null;
 
+  // Get icon label for accessibility
+  const getIconLabel = (type: string): string => {
+    switch (type) {
+      case 'success':
+        return 'Success';
+      case 'error':
+        return 'Error';
+      case 'warning':
+        return 'Warning';
+      case 'info':
+        return 'Information';
+      default:
+        return 'Notification';
+    }
+  };
+
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+    <div 
+      className="fixed bottom-4 right-4 z-50 flex flex-col gap-2"
+      role="region"
+      aria-label="Notifications"
+    >
       {notifications.map((notification) => (
         <div
           key={notification.id}
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
           className={`flex items-center gap-3 rounded-lg px-4 py-3 shadow-lg ${
             notification.type === 'success'
               ? 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400'
@@ -39,10 +80,11 @@ export function NotificationContainer() {
               : 'bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
           }`}
         >
-          {/* Icon */}
-          <div className="flex-shrink-0">
+          {/* Icon with text label */}
+          <div className="flex-shrink-0" aria-hidden="true">
             {notification.type === 'success' && (
               <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                <title>{getIconLabel(notification.type)}</title>
                 <path
                   fillRule="evenodd"
                   d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
@@ -52,6 +94,7 @@ export function NotificationContainer() {
             )}
             {notification.type === 'error' && (
               <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                <title>{getIconLabel(notification.type)}</title>
                 <path
                   fillRule="evenodd"
                   d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
@@ -61,6 +104,7 @@ export function NotificationContainer() {
             )}
             {notification.type === 'warning' && (
               <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                <title>{getIconLabel(notification.type)}</title>
                 <path
                   fillRule="evenodd"
                   d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
@@ -70,6 +114,7 @@ export function NotificationContainer() {
             )}
             {notification.type === 'info' && (
               <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                <title>{getIconLabel(notification.type)}</title>
                 <path
                   fillRule="evenodd"
                   d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
@@ -79,16 +124,20 @@ export function NotificationContainer() {
             )}
           </div>
 
+          {/* Status type text (visible to screen readers, hidden visually) */}
+          <span className="sr-only">{getIconLabel(notification.type)}:</span>
+
           {/* Message */}
           <p className="flex-1 text-sm font-medium">{notification.message}</p>
 
           {/* Close button */}
           <button
             onClick={() => removeNotification(notification.id)}
-            className="flex-shrink-0 rounded-lg p-1 hover:bg-black/10 dark:hover:bg-white/10"
-            aria-label="Close notification"
+            className="flex-shrink-0 rounded-lg p-1 hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            aria-label={`Close ${getIconLabel(notification.type).toLowerCase()} notification: ${notification.message}`}
           >
             <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+              <title>Close</title>
               <path
                 fillRule="evenodd"
                 d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
