@@ -3,6 +3,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --focus-color: #2563eb; /* Updated for better contrast (was #3b82f6) */
+  --focus-color-dark: #60a5fa;
 }
 
 @theme inline {
@@ -16,6 +18,23 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+  }
+}
+
+/* High Contrast Theme */
+@media (prefers-contrast: more) {
+  :root {
+    --background: #ffffff;
+    --foreground: #000000;
+    --focus-color: #0000ff; /* Pure blue for maximum contrast */
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: #000000;
+      --foreground: #ffffff;
+      --focus-color: #ffff00; /* Yellow for maximum contrast in dark mode */
+    }
   }
 }
 
@@ -209,10 +228,11 @@ body {
 
 /* Keyboard Navigation and Focus Styles */
 /* Requirement 20.2: Visible focus indicators for keyboard navigation */
+/* Requirement 20.3: WCAG 2.1 AA contrast compliance (3:1 minimum for UI components) */
 
 /* Global focus indicator */
 *:focus {
-  outline: 3px solid #3b82f6;
+  outline: 3px solid var(--focus-color, #2563eb);
   outline-offset: 2px;
 }
 
@@ -224,14 +244,14 @@ select:focus,
 textarea:focus,
 [role="button"]:focus,
 [tabindex="0"]:focus {
-  outline: 3px solid #3b82f6;
+  outline: 3px solid var(--focus-color, #2563eb);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
 }
 
 /* Focus within for containers */
 *:focus-within {
-  outline-color: #3b82f6;
+  outline-color: var(--focus-color, #2563eb);
 }
 
 /* Focus visible (only show on keyboard navigation) */
@@ -241,17 +261,59 @@ textarea:focus,
 }
 
 *:focus-visible {
-  outline: 3px solid #3b82f6;
+  outline: 3px solid var(--focus-color, #2563eb);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
 }
 
 /* High contrast focus for dark mode */
 @media (prefers-color-scheme: dark) {
   *:focus,
   *:focus-visible {
-    outline-color: #60a5fa;
+    outline-color: var(--focus-color-dark, #60a5fa);
     box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.2);
+  }
+  
+  button:focus,
+  a:focus,
+  input:focus,
+  select:focus,
+  textarea:focus,
+  [role="button"]:focus,
+  [tabindex="0"]:focus {
+    box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.2);
+  }
+}
+
+/* High contrast mode - maximum contrast focus indicators */
+@media (prefers-contrast: more) {
+  *:focus,
+  *:focus-visible,
+  button:focus,
+  a:focus,
+  input:focus,
+  select:focus,
+  textarea:focus,
+  [role="button"]:focus,
+  [tabindex="0"]:focus {
+    outline-width: 4px;
+    outline-color: var(--focus-color, #0000ff);
+    box-shadow: 0 0 0 6px rgba(0, 0, 255, 0.2);
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    *:focus,
+    *:focus-visible,
+    button:focus,
+    a:focus,
+    input:focus,
+    select:focus,
+    textarea:focus,
+    [role="button"]:focus,
+    [tabindex="0"]:focus {
+      outline-color: var(--focus-color, #ffff00);
+      box-shadow: 0 0 0 6px rgba(255, 255, 0, 0.3);
+    }
   }
 }
 
@@ -259,9 +321,9 @@ textarea:focus,
 .credential-card:focus,
 .folder-item:focus,
 .tag-item:focus {
-  outline: 3px solid #3b82f6;
+  outline: 3px solid var(--focus-color, #2563eb);
   outline-offset: 2px;
-  background-color: rgba(59, 130, 246, 0.05);
+  background-color: rgba(37, 99, 235, 0.05);
 }
 
 /* Focus for form inputs */
@@ -271,23 +333,23 @@ input[type="password"]:focus,
 input[type="url"]:focus,
 input[type="search"]:focus,
 textarea:focus {
-  outline: 3px solid #3b82f6;
+  outline: 3px solid var(--focus-color, #2563eb);
   outline-offset: 0;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  border-color: var(--focus-color, #2563eb);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
 }
 
 /* Focus for buttons */
 button:focus-visible,
 [role="button"]:focus-visible {
-  outline: 3px solid #3b82f6;
+  outline: 3px solid var(--focus-color, #2563eb);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
 }
 
 /* Focus for links */
 a:focus-visible {
-  outline: 3px solid #3b82f6;
+  outline: 3px solid var(--focus-color, #2563eb);
   outline-offset: 2px;
   text-decoration: underline;
   text-decoration-thickness: 2px;
@@ -296,9 +358,9 @@ a:focus-visible {
 /* Focus for checkboxes and radio buttons */
 input[type="checkbox"]:focus,
 input[type="radio"]:focus {
-  outline: 3px solid #3b82f6;
+  outline: 3px solid var(--focus-color, #2563eb);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
 }
 
 /* Skip navigation link styles */
