@@ -1,9 +1,15 @@
 package com.passwordmanager.backend.dto;
 
+import com.passwordmanager.backend.validation.ValidExportRequest;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * Request DTO for vault export operations.
@@ -13,6 +19,11 @@ import jakarta.validation.constraints.Pattern;
  * 
  * Requirements: 11.1, 11.2, 11.3, 11.4
  */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@ValidExportRequest
 @Schema(description = "Request for exporting vault data")
 public class ExportRequest {
 
@@ -22,80 +33,31 @@ public class ExportRequest {
     private String format;
 
     @NotBlank(message = "Master password hash is required for re-authentication")
-    @Schema(description = "Master password hash for re-authentication", example = "hashed_master_password")
+    @Size(min = 60, max = 60, message = "Master password hash must be exactly 60 characters (BCrypt format)")
+    @Schema(description = "Master password hash for re-authentication", example = "$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uIfa")
     private String masterPasswordHash;
 
     @Schema(description = "Whether to encrypt the export with a user-specified password", example = "true")
+    @Builder.Default
     private boolean encrypted = false;
 
-    @Schema(description = "Password for encrypting the export (required if encrypted=true)", example = "export_password")
+    @Size(min = 8, max = 128, message = "Export password must be between 8 and 128 characters")
+    @Schema(description = "Password for encrypting the export (required if encrypted=true, min 8 chars)", example = "export_password")
     private String exportPassword;
 
     @Schema(description = "Whether to include deleted items in the export", example = "false")
+    @Builder.Default
     private boolean includeDeleted = false;
-
-    // Constructors
-    public ExportRequest() {}
-
-    public ExportRequest(String format, String masterPasswordHash) {
-        this.format = format;
-        this.masterPasswordHash = masterPasswordHash;
-    }
-
-    public ExportRequest(String format, String masterPasswordHash, boolean encrypted, String exportPassword) {
-        this.format = format;
-        this.masterPasswordHash = masterPasswordHash;
-        this.encrypted = encrypted;
-        this.exportPassword = exportPassword;
-    }
-
-    // Getters and Setters
-    public String getFormat() {
-        return format;
-    }
-
-    public void setFormat(String format) {
-        this.format = format;
-    }
-
-    public String getMasterPasswordHash() {
-        return masterPasswordHash;
-    }
-
-    public void setMasterPasswordHash(String masterPasswordHash) {
-        this.masterPasswordHash = masterPasswordHash;
-    }
-
-    public boolean isEncrypted() {
-        return encrypted;
-    }
-
-    public void setEncrypted(boolean encrypted) {
-        this.encrypted = encrypted;
-    }
-
-    public String getExportPassword() {
-        return exportPassword;
-    }
-
-    public void setExportPassword(String exportPassword) {
-        this.exportPassword = exportPassword;
-    }
-
-    public boolean isIncludeDeleted() {
-        return includeDeleted;
-    }
-
-    public void setIncludeDeleted(boolean includeDeleted) {
-        this.includeDeleted = includeDeleted;
-    }
-
-    @Override
-    public String toString() {
-        return "ExportRequest{" +
-                "format='" + format + '\'' +
-                ", encrypted=" + encrypted +
-                ", includeDeleted=" + includeDeleted +
-                '}';
+    
+    /**
+     * Validates that export password is provided when encryption is enabled.
+     * 
+     * @return true if validation passes, false otherwise
+     */
+    public boolean isValid() {
+        if (encrypted && (exportPassword == null || exportPassword.trim().isEmpty())) {
+            return false;
+        }
+        return true;
     }
 }

@@ -35,7 +35,11 @@ public class ExportPropertyTest {
             @ForAll @From("validMasterPasswordHashes") String masterPasswordHash) {
         
         // Given: A valid export request
-        ExportRequest request = new ExportRequest(format, masterPasswordHash);
+        ExportRequest request = ExportRequest.builder()
+            .format(format)
+            .masterPasswordHash(masterPasswordHash)
+            .encrypted(false)
+            .build();
         
         // When: Creating an export response (simulated)
         ExportResponse response = createMockExportResponse(format, false);
@@ -60,8 +64,17 @@ public class ExportPropertyTest {
             @ForAll @NotEmpty @StringLength(min = 8, max = 50) String exportPassword) {
         
         // Given: Export requests with and without encryption
-        ExportRequest encryptedRequest = new ExportRequest(format, masterPasswordHash, true, exportPassword);
-        ExportRequest unencryptedRequest = new ExportRequest(format, masterPasswordHash, false, null);
+        ExportRequest encryptedRequest = ExportRequest.builder()
+            .format(format)
+            .masterPasswordHash(masterPasswordHash)
+            .encrypted(true)
+            .exportPassword(exportPassword)
+            .build();
+        ExportRequest unencryptedRequest = ExportRequest.builder()
+            .format(format)
+            .masterPasswordHash(masterPasswordHash)
+            .encrypted(false)
+            .build();
         
         // When: Creating export responses (simulated)
         ExportResponse encryptedResponse = createMockExportResponse(format, true);

@@ -1,5 +1,6 @@
 package com.passwordmanager.backend.dto;
 
+import com.passwordmanager.backend.validation.ValidBase64;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Min;
@@ -65,6 +66,7 @@ public class RegisterRequest {
      */
     @NotBlank(message = "Salt is required")
     @Size(min = 16, max = 255, message = "Salt must be between 16 and 255 characters")
+    @ValidBase64(message = "Salt must be valid Base64")
     @Schema(
         description = "Base64-encoded salt for PBKDF2 key derivation",
         example = "dGVzdC1zYWx0LWZvci1wYmtkZjI=",

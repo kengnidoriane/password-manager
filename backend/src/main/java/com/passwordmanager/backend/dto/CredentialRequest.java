@@ -1,5 +1,6 @@
 package com.passwordmanager.backend.dto;
 
+import com.passwordmanager.backend.validation.ValidBase64;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -41,6 +42,7 @@ public class CredentialRequest {
      */
     @NotBlank(message = "Encrypted data is required")
     @Size(max = 10000, message = "Encrypted data must not exceed 10000 characters")
+    @ValidBase64(message = "Encrypted data must be valid Base64")
     @Schema(
         description = "AES-256-GCM encrypted credential data as base64 string",
         example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -56,6 +58,7 @@ public class CredentialRequest {
      */
     @NotBlank(message = "IV is required")
     @Size(min = 16, max = 255, message = "IV must be between 16 and 255 characters")
+    @ValidBase64(message = "IV must be valid Base64")
     @Schema(
         description = "Base64-encoded initialization vector for AES-GCM encryption",
         example = "MTIzNDU2Nzg5MDEyMzQ1Ng==",
@@ -71,6 +74,7 @@ public class CredentialRequest {
      */
     @NotBlank(message = "Authentication tag is required")
     @Size(min = 16, max = 255, message = "Authentication tag must be between 16 and 255 characters")
+    @ValidBase64(message = "Authentication tag must be valid Base64")
     @Schema(
         description = "Base64-encoded authentication tag for AES-GCM encryption",
         example = "dGFnMTIzNDU2Nzg5MDEyMzQ1Ng==",

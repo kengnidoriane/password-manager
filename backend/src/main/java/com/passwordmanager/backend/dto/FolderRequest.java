@@ -1,5 +1,6 @@
 package com.passwordmanager.backend.dto;
 
+import com.passwordmanager.backend.validation.SafeHtml;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -33,6 +34,7 @@ public class FolderRequest {
      */
     @NotBlank(message = "Folder name is required")
     @Size(min = 1, max = 255, message = "Folder name must be between 1 and 255 characters")
+    @SafeHtml(allowHtml = false, message = "Folder name must not contain HTML")
     @Schema(
         description = "Display name of the folder",
         example = "Work Accounts",
@@ -45,6 +47,7 @@ public class FolderRequest {
      * Optional description of the folder's purpose.
      */
     @Size(max = 1000, message = "Description must not exceed 1000 characters")
+    @SafeHtml(message = "Description contains potentially dangerous HTML")
     @Schema(
         description = "Optional description of the folder's purpose",
         example = "Contains all work-related login credentials",

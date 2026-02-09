@@ -1,10 +1,12 @@
 package com.passwordmanager.backend.dto;
 
+import com.passwordmanager.backend.validation.ValidBase64;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -34,6 +36,7 @@ public class RecoveryRequest {
      */
     @NotBlank(message = "Email is required")
     @Email(message = "Email must be valid")
+    @Size(max = 255, message = "Email must not exceed 255 characters")
     @Schema(description = "Email address of the account to recover", example = "user@example.com")
     private String email;
 
@@ -44,6 +47,7 @@ public class RecoveryRequest {
      * during account creation.
      */
     @NotBlank(message = "Recovery key is required")
+    @Size(min = 32, max = 128, message = "Recovery key must be between 32 and 128 characters")
     @Schema(description = "Backup recovery key", example = "ABCDEF-123456-GHIJKL-789012-MNOPQR-345678-STUVWX-901234")
     private String recoveryKey;
 
@@ -54,6 +58,7 @@ public class RecoveryRequest {
      * derived from the new master password using PBKDF2.
      */
     @NotBlank(message = "New authentication key hash is required")
+    @Size(min = 60, max = 60, message = "New authentication key hash must be exactly 60 characters (BCrypt format)")
     @Schema(description = "BCrypt hash of the new authentication key derived from the new master password")
     private String newAuthKeyHash;
 
@@ -64,6 +69,8 @@ public class RecoveryRequest {
      * from the new master password.
      */
     @NotBlank(message = "New salt is required")
+    @Size(min = 16, max = 255, message = "New salt must be between 16 and 255 characters")
+    @ValidBase64(message = "New salt must be valid Base64")
     @Schema(description = "Salt for PBKDF2 key derivation with the new master password")
     private String newSalt;
 

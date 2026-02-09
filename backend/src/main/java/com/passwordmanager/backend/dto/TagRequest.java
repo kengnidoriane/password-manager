@@ -1,5 +1,6 @@
 package com.passwordmanager.backend.dto;
 
+import com.passwordmanager.backend.validation.SafeHtml;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -32,6 +33,7 @@ public class TagRequest {
      */
     @NotBlank(message = "Tag name is required")
     @Size(min = 1, max = 100, message = "Tag name must be between 1 and 100 characters")
+    @SafeHtml(allowHtml = false, message = "Tag name must not contain HTML")
     @Schema(
         description = "Display name of the tag",
         example = "Banking",
@@ -57,6 +59,7 @@ public class TagRequest {
      * Optional description of the tag's purpose or usage.
      */
     @Size(max = 500, message = "Description must not exceed 500 characters")
+    @SafeHtml(message = "Description contains potentially dangerous HTML")
     @Schema(
         description = "Optional description of the tag's purpose or usage",
         example = "For all banking and financial institution accounts",

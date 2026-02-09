@@ -1,6 +1,11 @@
 package com.passwordmanager.backend.dto;
 
+import com.passwordmanager.backend.validation.SafeHtml;
+import com.passwordmanager.backend.validation.ValidBase64;
+import com.passwordmanager.backend.validation.ValidFileUpload;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -35,6 +40,7 @@ public class SecureNoteRequest {
      */
     @NotBlank(message = "Title is required")
     @Size(max = 255, message = "Title must not exceed 255 characters")
+    @SafeHtml(allowHtml = false, message = "Title must not contain HTML")
     @Schema(description = "Display title of the secure note", example = "Meeting Notes", maxLength = 255)
     private String title;
 
@@ -47,6 +53,7 @@ public class SecureNoteRequest {
      * - Metadata about formatting
      */
     @NotBlank(message = "Encrypted content is required")
+    @ValidBase64(message = "Encrypted content must be valid Base64")
     @Schema(description = "AES-256-GCM encrypted note content", example = "eyJjb250ZW50IjoiVGhpcyBpcyBhIHNlY3VyZSBub3RlIn0=")
     private String encryptedContent;
 
@@ -54,6 +61,7 @@ public class SecureNoteRequest {
      * Initialization vector for content encryption.
      */
     @NotBlank(message = "Content IV is required")
+    @ValidBase64(message = "Content IV must be valid Base64")
     @Schema(description = "Initialization vector for content encryption", example = "MTIzNDU2Nzg5MDEyMzQ1Ng==")
     private String contentIv;
 
@@ -61,6 +69,7 @@ public class SecureNoteRequest {
      * Authentication tag for content encryption integrity verification.
      */
     @NotBlank(message = "Content authentication tag is required")
+    @ValidBase64(message = "Content authentication tag must be valid Base64")
     @Schema(description = "Authentication tag for content encryption", example = "YWJjZGVmZ2hpams=")
     private String contentAuthTag;
 
@@ -73,6 +82,8 @@ public class SecureNoteRequest {
      * 
      * Optional field - null if no attachments are present.
      */
+    @ValidBase64(message = "Encrypted attachments must be valid Base64")
+    @ValidFileUpload(maxSize = 10485760, message = "Attachments must not exceed 10MB")
     @Schema(description = "AES-256-GCM encrypted file attachments (optional)", example = "eyJhdHRhY2htZW50cyI6W119")
     private String encryptedAttachments;
 
@@ -81,6 +92,7 @@ public class SecureNoteRequest {
      * 
      * Required if encryptedAttachments is provided.
      */
+    @ValidBase64(message = "Attachments IV must be valid Base64")
     @Schema(description = "Initialization vector for attachments encryption", example = "MTIzNDU2Nzg5MDEyMzQ1Ng==")
     private String attachmentsIv;
 
@@ -89,6 +101,7 @@ public class SecureNoteRequest {
      * 
      * Required if encryptedAttachments is provided.
      */
+    @ValidBase64(message = "Attachments authentication tag must be valid Base64")
     @Schema(description = "Authentication tag for attachments encryption", example = "YWJjZGVmZ2hpams=")
     private String attachmentsAuthTag;
 
@@ -98,6 +111,8 @@ public class SecureNoteRequest {
      * Used for quota enforcement and display purposes.
      * Required if encryptedAttachments is provided.
      */
+    @Min(value = 0, message = "Attachments size must be non-negative")
+    @Max(value = 10485760, message = "Attachments size must not exceed 10MB")
     @Schema(description = "Total size of all attachments in bytes", example = "1048576")
     private Long attachmentsSize;
 
@@ -106,6 +121,8 @@ public class SecureNoteRequest {
      * 
      * Required if encryptedAttachments is provided.
      */
+    @Min(value = 0, message = "Attachment count must be non-negative")
+    @Max(value = 100, message = "Cannot have more than 100 attachments")
     @Schema(description = "Number of file attachments", example = "3")
     private Integer attachmentCount;
 
