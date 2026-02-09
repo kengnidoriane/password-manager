@@ -61,6 +61,7 @@ public class ImportPropertyTest {
         mockSecureNoteRepository = mock(SecureNoteRepository.class);
         mockCustomMetricsService = mock(CustomMetricsService.class);
         mockAuditLogService = mock(AuditLogService.class);
+        CacheMetricsService mockCacheMetricsService = mock(CacheMetricsService.class);
         
         // Create VaultService with mocks
         vaultService = new VaultService(
@@ -70,7 +71,8 @@ public class ImportPropertyTest {
             mockTagRepository,
             mockSecureNoteRepository,
             mockCustomMetricsService,
-            mockAuditLogService
+            mockAuditLogService,
+            mockCacheMetricsService
         );
         
         testUserId = UUID.randomUUID();
