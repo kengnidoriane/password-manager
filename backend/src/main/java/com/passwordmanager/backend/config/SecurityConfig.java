@@ -1,6 +1,7 @@
 package com.passwordmanager.backend.config;
 
 import com.passwordmanager.backend.filter.JwtAuthenticationFilter;
+import com.passwordmanager.backend.filter.RateLimitFilter;
 import com.passwordmanager.backend.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,13 +39,16 @@ public class SecurityConfig {
     private final CorsConfigurationSource corsConfigurationSource;
     private final CustomUserDetailsService customUserDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final RateLimitFilter rateLimitFilter;
 
     public SecurityConfig(CorsConfigurationSource corsConfigurationSource,
                           CustomUserDetailsService customUserDetailsService,
-                          JwtAuthenticationFilter jwtAuthenticationFilter) {
+                          JwtAuthenticationFilter jwtAuthenticationFilter,
+                          RateLimitFilter rateLimitFilter) {
         this.corsConfigurationSource = corsConfigurationSource;
         this.customUserDetailsService = customUserDetailsService;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.rateLimitFilter = rateLimitFilter;
     }
 
     /**
@@ -122,6 +126,9 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
+                
+                // Add rate limit filter first
+                .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 
                 // Add JWT authentication filter before UsernamePasswordAuthenticationFilter
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
