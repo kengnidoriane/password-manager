@@ -13,7 +13,11 @@
     "test:a11y": "jest --testPathPatterns=\"(aria-labels|keyboard-navigation|wcag-contrast|form-label-association|multi-modal-feedback|screenReaderService|responsive)\"",
     "test:a11y:watch": "jest --testPathPatterns=\"(aria-labels|keyboard-navigation|wcag-contrast|form-label-association|multi-modal-feedback|screenReaderService|responsive)\" --watch",
     "analyze": "ANALYZE=true npm run build",
-    "check-bundle": "node scripts/check-bundle-size.js"
+    "check-bundle": "node scripts/check-bundle-size.js",
+    "cypress": "cypress open",
+    "cypress:headless": "cypress run",
+    "test:e2e": "cypress run",
+    "test:e2e:open": "cypress open"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
@@ -29,6 +33,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@testing-library/cypress": "^10.1.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@types/jest": "^30.0.0",
@@ -36,6 +41,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
+    "cypress": "^15.10.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.7",
     "eslint-config-prettier": "^10.1.8",

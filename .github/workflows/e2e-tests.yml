@@ -1,0 +1,135 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  cypress-run:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: passwordmanager_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+      
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+      
+      - name: Install backend dependencies
+        working-directory: backend
+        run: mvn clean install -DskipTests
+      
+      - name: Run database migrations
+        working-directory: backend
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/passwordmanager_test
+          SPRING_DATASOURCE_USERNAME: postgres
+          SPRING_DATASOURCE_PASSWORD: postgres
+        run: mvn flyway:migrate
+      
+      - name: Start backend server
+        working-directory: backend
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/passwordmanager_test
+          SPRING_DATASOURCE_USERNAME: postgres
+          SPRING_DATASOURCE_PASSWORD: postgres
+          SPRING_DATA_REDIS_HOST: localhost
+          SPRING_DATA_REDIS_PORT: 6379
+          JWT_SECRET: test-secret-key-for-ci-testing-only-min-256-bits
+          JWT_EXPIRATION: 900000
+        run: |
+          mvn spring-boot:run &
+          echo $! > backend.pid
+          # Wait for backend to be ready
+          timeout 60 bash -c 'until curl -f http://localhost:8080/actuator/health; do sleep 2; done'
+      
+      - name: Start frontend server
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8080/api/v1
+        run: |
+          npm run start &
+          echo $! > frontend.pid
+          # Wait for frontend to be ready
+          timeout 60 bash -c 'until curl -f http://localhost:3000; do sleep 2; done'
+      
+      - name: Run Cypress tests
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: frontend
+          browser: chrome
+          wait-on: 'http://localhost:3000, http://localhost:8080/actuator/health'
+          wait-on-timeout: 120
+          config-file: cypress.config.ts
+      
+      - name: Upload Cypress screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-screenshots
+          path: frontend/cypress/screenshots
+          retention-days: 7
+      
+      - name: Upload Cypress videos
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cypress-videos
+          path: frontend/cypress/videos
+          retention-days: 7
+      
+      - name: Stop servers
+        if: always()
+        run: |
+          if [ -f backend/backend.pid ]; then
+            kill $(cat backend/backend.pid) || true
+          fi
+          if [ -f frontend/frontend.pid ]; then
+            kill $(cat frontend/frontend.pid) || true
+          fi
