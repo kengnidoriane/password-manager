@@ -12,6 +12,47 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizeCss: true,
   },
+
+  // Performance optimizations
+  compress: true, // Enable Gzip compression
+  
+  // Image optimization
+  images: {
+    formats: ['image/webp', 'image/avif'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    minimumCacheTTL: 60 * 60 * 24 * 365, // 1 year
+  },
+
+  // Webpack optimizations
+  webpack: (config, { dev, isServer }) => {
+    // Production optimizations
+    if (!dev && !isServer) {
+      // Enable tree shaking
+      config.optimization = {
+        ...config.optimization,
+        usedExports: true,
+        sideEffects: false,
+      };
+    }
+
+    return config;
+  },
+
+  // Bundle analyzer (enable with ANALYZE=true)
+  ...(process.env.ANALYZE === 'true' && {
+    webpack: (config: any) => {
+      const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
+      config.plugins.push(
+        new BundleAnalyzerPlugin({
+          analyzerMode: 'static',
+          reportFilename: './analyze.html',
+          openAnalyzer: false,
+        })
+      );
+      return config;
+    },
+  }),
   
   // Security Headers
   async headers() {

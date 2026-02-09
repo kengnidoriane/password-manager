@@ -1,10 +1,28 @@
  'use client';
 
-import { useState } from 'react';
-import { VaultList, CredentialForm, FolderTree, TagManager, SecureNoteList, SecureNoteForm, ShareDialog, SharedWithMe } from '@/components/vault';
+import { useState, lazy, Suspense } from 'react';
 import { useVault } from '@/hooks/useVault';
 import { CredentialFormData } from '@/lib/validations';
 import { SecureNote } from '@/lib/db';
+
+// Dynamic imports for heavy components
+const VaultList = lazy(() => import('@/components/vault').then(mod => ({ default: mod.VaultList })));
+const CredentialForm = lazy(() => import('@/components/vault').then(mod => ({ default: mod.CredentialForm })));
+const FolderTree = lazy(() => import('@/components/vault').then(mod => ({ default: mod.FolderTree })));
+const TagManager = lazy(() => import('@/components/vault').then(mod => ({ default: mod.TagManager })));
+const SecureNoteList = lazy(() => import('@/components/vault').then(mod => ({ default: mod.SecureNoteList })));
+const SecureNoteForm = lazy(() => import('@/components/vault').then(mod => ({ default: mod.SecureNoteForm })));
+const ShareDialog = lazy(() => import('@/components/vault').then(mod => ({ default: mod.ShareDialog })));
+const SharedWithMe = lazy(() => import('@/components/vault').then(mod => ({ default: mod.SharedWithMe })));
+
+// Loading component
+function LoadingSpinner() {
+  return (
+    <div className="flex items-center justify-center p-8">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+    </div>
+  );
+}
 
 /**
  * Vault Page
@@ -180,19 +198,23 @@ export default function VaultPage() {
           
           <div className="flex-1 overflow-y-auto">
             <div className="p-4">
-              <FolderTree
-                onFolderSelect={handleFolderSelect}
-                onFolderCreate={() => {/* TODO: Implement folder creation */}}
-                onFolderEdit={() => {/* TODO: Implement folder editing */}}
-                onFolderDelete={() => {/* TODO: Implement folder deletion */}}
-              />
+              <Suspense fallback={<LoadingSpinner />}>
+                <FolderTree
+                  onFolderSelect={handleFolderSelect}
+                  onFolderCreate={() => {/* TODO: Implement folder creation */}}
+                  onFolderEdit={() => {/* TODO: Implement folder editing */}}
+                  onFolderDelete={() => {/* TODO: Implement folder deletion */}}
+                />
+              </Suspense>
             </div>
             
             <div className="border-t border-gray-200 dark:border-gray-800 p-4">
-              <TagManager
-                onTagSelect={handleTagSelect}
-                compact={true}
-              />
+              <Suspense fallback={<LoadingSpinner />}>
+                <TagManager
+                  onTagSelect={handleTagSelect}
+                  compact={true}
+                />
+              </Suspense>
             </div>
           </div>
         </div>
@@ -297,39 +319,43 @@ export default function VaultPage() {
           {(isCreating || editingCredentialId || editingNoteId) ? (
             <div className="h-full overflow-y-auto p-6">
               <div className="mx-auto max-w-2xl">
-                {(activeView === 'credentials' || editingCredentialId) ? (
-                  <CredentialForm
-                    credential={editingCredentialId ? credentials.find(c => c.id === editingCredentialId) : undefined}
-                    onSubmit={editingCredentialId ? handleEditCredential : handleCreateCredential}
-                    onCancel={cancelForm}
-                  />
-                ) : (
-                  <SecureNoteForm
-                    note={editingNoteId ? secureNotes.find(n => n.id === editingNoteId) : undefined}
-                    onSave={editingNoteId ? handleEditSecureNote : handleCreateSecureNote}
-                    onCancel={cancelForm}
-                  />
-                )}
+                <Suspense fallback={<LoadingSpinner />}>
+                  {(activeView === 'credentials' || editingCredentialId) ? (
+                    <CredentialForm
+                      credential={editingCredentialId ? credentials.find(c => c.id === editingCredentialId) : undefined}
+                      onSubmit={editingCredentialId ? handleEditCredential : handleCreateCredential}
+                      onCancel={cancelForm}
+                    />
+                  ) : (
+                    <SecureNoteForm
+                      note={editingNoteId ? secureNotes.find(n => n.id === editingNoteId) : undefined}
+                      onSave={editingNoteId ? handleEditSecureNote : handleCreateSecureNote}
+                      onCancel={cancelForm}
+                    />
+                  )}
+                </Suspense>
               </div>
             </div>
           ) : (
             <div className="h-full overflow-y-auto p-6">
-              {activeView === 'credentials' ? (
-                <VaultList
-                  selectedCredentialId={selectedCredentialId || undefined}
-                  onCredentialSelect={handleCredentialSelect}
-                  onCredentialEdit={handleCredentialEdit}
-                  onCredentialShare={handleCredentialShare}
-                />
-              ) : activeView === 'notes' ? (
-                <SecureNoteList
-                  selectedNoteId={selectedNoteId || undefined}
-                  onNoteSelect={handleNoteSelect}
-                  onNoteEdit={handleNoteEdit}
-                />
-              ) : (
-                <SharedWithMe />
-              )}
+              <Suspense fallback={<LoadingSpinner />}>
+                {activeView === 'credentials' ? (
+                  <VaultList
+                    selectedCredentialId={selectedCredentialId || undefined}
+                    onCredentialSelect={handleCredentialSelect}
+                    onCredentialEdit={handleCredentialEdit}
+                    onCredentialShare={handleCredentialShare}
+                  />
+                ) : activeView === 'notes' ? (
+                  <SecureNoteList
+                    selectedNoteId={selectedNoteId || undefined}
+                    onNoteSelect={handleNoteSelect}
+                    onNoteEdit={handleNoteEdit}
+                  />
+                ) : (
+                  <SharedWithMe />
+                )}
+              </Suspense>
             </div>
           )}
         </div>
@@ -337,15 +363,17 @@ export default function VaultPage() {
 
       {/* Share Dialog */}
       {shareDialogCredentialId && (
-        <ShareDialog
-          credential={credentials.find(c => c.id === shareDialogCredentialId)!}
-          isOpen={true}
-          onClose={handleShareDialogClose}
-          onShare={(shareResponse) => {
-            console.log('Credential shared:', shareResponse);
-            // You could show a success notification here
-          }}
-        />
+        <Suspense fallback={<LoadingSpinner />}>
+          <ShareDialog
+            credential={credentials.find(c => c.id === shareDialogCredentialId)!}
+            isOpen={true}
+            onClose={handleShareDialogClose}
+            onShare={(shareResponse) => {
+              console.log('Credential shared:', shareResponse);
+              // You could show a success notification here
+            }}
+          />
+        </Suspense>
       )}
     </div>
   );

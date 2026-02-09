@@ -7,6 +7,7 @@ import { PWAUpdatePrompt } from "@/components/ui/PWAUpdatePrompt";
 import { PWAInstallPrompt } from "@/components/ui/PWAInstallPrompt";
 import { PWAProvider } from "@/components/ui/PWAProvider";
 import { PWAStatus } from "@/components/ui/PWAStatus";
+import { PerformanceMonitor } from "@/components/PerformanceMonitor";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -142,6 +143,7 @@ export default function RootLayout({
         <link rel="apple-touch-startup-image" href="/splash-1242x2208.svg" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
+        <PerformanceMonitor />
         <PWAProvider>
           <SessionProvider>
             {children}
