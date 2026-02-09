@@ -121,7 +121,6 @@ public class RedisConfig {
         
         return new GenericJackson2JsonRedisSerializer(objectMapper);
     }
-}
 
     /**
      * Configures RestTemplate for external API calls (e.g., breach check service).
@@ -136,3 +135,4 @@ public class RedisConfig {
                 .setReadTimeout(Duration.ofSeconds(10))
                 .build();
     }
+}

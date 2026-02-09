@@ -33,21 +33,30 @@ public interface VaultRepository extends JpaRepository<VaultEntry, UUID> {
 
     /**
      * Finds all active (non-deleted) vault entries for a specific user.
+     * Uses JOIN FETCH to avoid N+1 queries for user and folder relationships.
      * 
      * @param userId the user ID
      * @return list of active vault entries
      */
-    @Query("SELECT v FROM VaultEntry v WHERE v.user.id = :userId AND v.deletedAt IS NULL")
+    @Query("SELECT DISTINCT v FROM VaultEntry v " +
+           "LEFT JOIN FETCH v.user " +
+           "LEFT JOIN FETCH v.folder " +
+           "WHERE v.user.id = :userId AND v.deletedAt IS NULL")
     List<VaultEntry> findActiveByUserId(@Param("userId") UUID userId);
 
     /**
      * Finds all active vault entries for a user with pagination.
+     * Uses JOIN FETCH to avoid N+1 queries for user and folder relationships.
      * 
      * @param userId the user ID
      * @param pageable pagination parameters
      * @return page of active vault entries
      */
-    @Query("SELECT v FROM VaultEntry v WHERE v.user.id = :userId AND v.deletedAt IS NULL")
+    @Query(value = "SELECT DISTINCT v FROM VaultEntry v " +
+           "LEFT JOIN FETCH v.user " +
+           "LEFT JOIN FETCH v.folder " +
+           "WHERE v.user.id = :userId AND v.deletedAt IS NULL",
+           countQuery = "SELECT COUNT(v) FROM VaultEntry v WHERE v.user.id = :userId AND v.deletedAt IS NULL")
     Page<VaultEntry> findActiveByUserId(@Param("userId") UUID userId, Pageable pageable);
 
     /**
@@ -210,12 +219,16 @@ public interface VaultRepository extends JpaRepository<VaultEntry, UUID> {
 
     /**
      * Finds entries modified after a specific timestamp for sync operations.
+     * Uses JOIN FETCH to avoid N+1 queries.
      * 
      * @param userId the user ID
      * @param lastSyncTime the last sync timestamp
      * @return list of entries modified since last sync
      */
-    @Query("SELECT v FROM VaultEntry v WHERE v.user.id = :userId AND v.updatedAt > :lastSyncTime ORDER BY v.updatedAt ASC")
+    @Query("SELECT DISTINCT v FROM VaultEntry v " +
+           "LEFT JOIN FETCH v.user " +
+           "LEFT JOIN FETCH v.folder " +
+           "WHERE v.user.id = :userId AND v.updatedAt > :lastSyncTime ORDER BY v.updatedAt ASC")
     List<VaultEntry> findModifiedSince(@Param("userId") UUID userId, @Param("lastSyncTime") LocalDateTime lastSyncTime);
 
     /**

@@ -30,15 +30,21 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
 
     /**
      * Find all audit logs for a specific user with pagination.
+     * Uses JOIN FETCH to avoid N+1 queries for user relationship.
      * 
      * @param user User account
      * @param pageable Pagination parameters
      * @return Page of audit logs
      */
+    @Query(value = "SELECT DISTINCT a FROM AuditLog a " +
+           "LEFT JOIN FETCH a.user " +
+           "WHERE a.user = :user ORDER BY a.timestamp DESC",
+           countQuery = "SELECT COUNT(a) FROM AuditLog a WHERE a.user = :user")
     Page<AuditLog> findByUserOrderByTimestampDesc(UserAccount user, Pageable pageable);
 
     /**
      * Find audit logs for a user within a date range.
+     * Uses JOIN FETCH to avoid N+1 queries.
      * 
      * @param user User account
      * @param startDate Start of date range
@@ -46,6 +52,10 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
      * @param pageable Pagination parameters
      * @return Page of audit logs
      */
+    @Query(value = "SELECT DISTINCT a FROM AuditLog a " +
+           "LEFT JOIN FETCH a.user " +
+           "WHERE a.user = :user AND a.timestamp BETWEEN :startDate AND :endDate ORDER BY a.timestamp DESC",
+           countQuery = "SELECT COUNT(a) FROM AuditLog a WHERE a.user = :user AND a.timestamp BETWEEN :startDate AND :endDate")
     Page<AuditLog> findByUserAndTimestampBetweenOrderByTimestampDesc(
             UserAccount user, 
             LocalDateTime startDate, 

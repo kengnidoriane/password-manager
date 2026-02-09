@@ -38,21 +38,35 @@ public interface SharedCredentialRepository extends JpaRepository<SharedCredenti
             @Param("vaultEntryId") UUID vaultEntryId);
 
     /**
-     * Find all active credentials shared with a specific user
+     * Find all active credentials shared with a specific user.
+     * Uses JOIN FETCH to avoid N+1 queries for owner, recipient, and vault entry.
      */
-    @Query("SELECT sc FROM SharedCredential sc WHERE sc.recipient.id = :recipientId AND sc.revokedAt IS NULL ORDER BY sc.createdAt DESC")
+    @Query("SELECT DISTINCT sc FROM SharedCredential sc " +
+           "LEFT JOIN FETCH sc.owner " +
+           "LEFT JOIN FETCH sc.recipient " +
+           "LEFT JOIN FETCH sc.vaultEntry " +
+           "WHERE sc.recipient.id = :recipientId AND sc.revokedAt IS NULL ORDER BY sc.createdAt DESC")
     List<SharedCredential> findActiveByRecipient(@Param("recipientId") UUID recipientId);
 
     /**
-     * Find all active credentials shared by a specific user
+     * Find all active credentials shared by a specific user.
+     * Uses JOIN FETCH to avoid N+1 queries for owner, recipient, and vault entry.
      */
-    @Query("SELECT sc FROM SharedCredential sc WHERE sc.owner.id = :ownerId AND sc.revokedAt IS NULL ORDER BY sc.createdAt DESC")
+    @Query("SELECT DISTINCT sc FROM SharedCredential sc " +
+           "LEFT JOIN FETCH sc.owner " +
+           "LEFT JOIN FETCH sc.recipient " +
+           "LEFT JOIN FETCH sc.vaultEntry " +
+           "WHERE sc.owner.id = :ownerId AND sc.revokedAt IS NULL ORDER BY sc.createdAt DESC")
     List<SharedCredential> findActiveByOwner(@Param("ownerId") UUID ownerId);
 
     /**
-     * Find all active shares for a specific vault entry
+     * Find all active shares for a specific vault entry.
+     * Uses JOIN FETCH to avoid N+1 queries.
      */
-    @Query("SELECT sc FROM SharedCredential sc WHERE sc.vaultEntry.id = :vaultEntryId AND sc.revokedAt IS NULL")
+    @Query("SELECT DISTINCT sc FROM SharedCredential sc " +
+           "LEFT JOIN FETCH sc.owner " +
+           "LEFT JOIN FETCH sc.recipient " +
+           "WHERE sc.vaultEntry.id = :vaultEntryId AND sc.revokedAt IS NULL")
     List<SharedCredential> findActiveByVaultEntry(@Param("vaultEntryId") UUID vaultEntryId);
 
     /**
