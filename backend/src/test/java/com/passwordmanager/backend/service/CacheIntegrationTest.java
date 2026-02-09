@@ -1,5 +1,6 @@
 package com.passwordmanager.backend.service;
 
+import com.passwordmanager.backend.BaseIntegrationTest;
 import com.passwordmanager.backend.dto.CredentialRequest;
 import com.passwordmanager.backend.dto.CredentialResponse;
 import com.passwordmanager.backend.entity.UserAccount;
@@ -8,9 +9,7 @@ import com.passwordmanager.backend.repository.VaultRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.CacheManager;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -27,10 +26,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * - Cache TTL configuration
  * - Cache metrics tracking
  */
-@SpringBootTest
-@ActiveProfiles("test")
 @Transactional
-class CacheIntegrationTest {
+class CacheIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private VaultService vaultService;

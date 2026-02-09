@@ -8,6 +8,7 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -22,9 +23,11 @@ import java.time.Duration;
 /**
  * Redis configuration for session management and caching.
  * Configures Redis templates and cache manager with proper serialization.
+ * Only active in non-test profiles.
  */
 @Configuration
 @EnableCaching
+@Profile("!test")
 public class RedisConfig {
 
     /**

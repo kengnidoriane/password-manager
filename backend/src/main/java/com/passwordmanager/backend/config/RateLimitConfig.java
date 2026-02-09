@@ -10,6 +10,7 @@ import io.lettuce.core.codec.StringCodec;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 import java.time.Duration;
 
@@ -18,8 +19,10 @@ import java.time.Duration;
  * 
  * This configuration sets up distributed rate limiting using Redis
  * to ensure rate limits work across multiple application instances.
+ * Only active in non-test profiles.
  */
 @Configuration
+@Profile("!test")
 public class RateLimitConfig {
 
     @Value("${spring.data.redis.host:localhost}")

@@ -1,15 +1,11 @@
 package com.passwordmanager.backend;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
 /**
  * Basic application context test to ensure the application starts correctly.
  */
-@SpringBootTest
-@ActiveProfiles("test")
-class PasswordManagerApplicationTests {
+class PasswordManagerApplicationTests extends BaseIntegrationTest {
 
     @Test
     void contextLoads() {

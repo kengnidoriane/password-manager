@@ -1,5 +1,6 @@
 package com.passwordmanager.backend.integration;
 
+import com.passwordmanager.backend.config.TestConfig;
 import com.passwordmanager.backend.dto.LoginRequest;
 import com.passwordmanager.backend.entity.UserAccount;
 import com.passwordmanager.backend.repository.UserRepository;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -32,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Import(TestConfig.class)
 class RateLimitIntegrationTest {
 
     @Autowired

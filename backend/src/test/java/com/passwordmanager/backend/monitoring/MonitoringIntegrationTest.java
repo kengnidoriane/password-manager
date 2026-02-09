@@ -1,5 +1,6 @@
 package com.passwordmanager.backend.monitoring;
 
+import com.passwordmanager.backend.config.TestConfig;
 import com.passwordmanager.backend.entity.UserAccount;
 import com.passwordmanager.backend.entity.VaultEntry;
 import com.passwordmanager.backend.repository.UserRepository;
@@ -13,6 +14,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebM
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
@@ -30,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
+@Import(TestConfig.class)
 @TestPropertySource(properties = {
     "management.endpoints.web.exposure.include=health,info,metrics,prometheus,password-manager",
     "management.endpoint.health.show-details=always",

@@ -1,5 +1,6 @@
 package com.passwordmanager.backend.service;
 
+import com.passwordmanager.backend.BaseIntegrationTest;
 import com.passwordmanager.backend.dto.SyncRequest;
 import com.passwordmanager.backend.dto.SyncResponse;
 import com.passwordmanager.backend.entity.Folder;
@@ -18,8 +19,6 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -43,9 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * **Feature: password-manager, Property 29: Conflict resolution last-write-wins**
  * **Validates: Requirements 6.3, 13.5**
  */
-@SpringBootTest
-@ActiveProfiles("test")
-public class SyncPropertyTest {
+public class SyncPropertyTest extends BaseIntegrationTest {
 
     @Autowired
     private SyncService syncService;
