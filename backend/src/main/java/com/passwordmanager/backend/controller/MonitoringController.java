@@ -5,6 +5,7 @@ import com.passwordmanager.backend.repository.AuditLogRepository;
 import com.passwordmanager.backend.repository.SessionRepository;
 import com.passwordmanager.backend.repository.UserRepository;
 import com.passwordmanager.backend.repository.VaultRepository;
+import com.passwordmanager.backend.service.CacheMetricsService;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -34,7 +35,6 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/v1/monitoring")
-@RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Monitoring", description = "Application monitoring and metrics endpoints")
 public class MonitoringController {
@@ -44,6 +44,21 @@ public class MonitoringController {
     private final SessionRepository sessionRepository;
     private final AuditLogRepository auditLogRepository;
     private final MeterRegistry meterRegistry;
+    private final CacheMetricsService cacheMetricsService;
+
+    public MonitoringController(UserRepository userRepository,
+                               VaultRepository vaultRepository,
+                               SessionRepository sessionRepository,
+                               AuditLogRepository auditLogRepository,
+                               MeterRegistry meterRegistry,
+                               CacheMetricsService cacheMetricsService) {
+        this.userRepository = userRepository;
+        this.vaultRepository = vaultRepository;
+        this.sessionRepository = sessionRepository;
+        this.auditLogRepository = auditLogRepository;
+        this.meterRegistry = meterRegistry;
+        this.cacheMetricsService = cacheMetricsService;
+    }
 
     /**
      * Get application metrics summary.
@@ -238,6 +253,49 @@ public class MonitoringController {
             log.error("Error retrieving performance metrics", e);
             return ResponseEntity.internalServerError()
                     .body(Map.of("error", "Failed to retrieve performance metrics", "timestamp", LocalDateTime.now()));
+        }
+    }
+
+    /**
+     * Get cache metrics and statistics.
+     * 
+     * @return Cache metrics including hit/miss rates for all caches
+     */
+    @GetMapping("/cache")
+    @Operation(
+            summary = "Get cache metrics",
+            description = "Returns cache performance metrics including hit/miss rates for all configured caches",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Cache metrics retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - Authentication required"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - Admin access required")
+    })
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> getCacheMetrics() {
+        try {
+            Map<String, Object> cacheMetrics = new HashMap<>();
+            
+            // Define cache names
+            String[] cacheNames = {"sessions", "vaultMetadata", "breachCheck", "securityReports"};
+            
+            for (String cacheName : cacheNames) {
+                Map<String, Object> metrics = new HashMap<>();
+                metrics.put("hits", cacheMetricsService.getHitCount(cacheName));
+                metrics.put("misses", cacheMetricsService.getMissCount(cacheName));
+                metrics.put("hitRate", String.format("%.2f%%", cacheMetricsService.getHitRate(cacheName)));
+                cacheMetrics.put(cacheName, metrics);
+            }
+            
+            cacheMetrics.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.ok(cacheMetrics);
+            
+        } catch (Exception e) {
+            log.error("Error retrieving cache metrics", e);
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", "Failed to retrieve cache metrics", "timestamp", LocalDateTime.now()));
         }
     }
 

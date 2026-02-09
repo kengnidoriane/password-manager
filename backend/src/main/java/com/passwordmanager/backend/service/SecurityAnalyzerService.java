@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,10 +53,12 @@ public class SecurityAnalyzerService {
 
     /**
      * Generates a comprehensive security report for a user's vault.
+     * Cached for 1 hour to improve performance.
      * 
      * @param userId the user ID
      * @return security report with analysis results
      */
+    @Cacheable(value = "securityReports", key = "#userId", unless = "#result == null")
     public SecurityReport generateSecurityReport(UUID userId) {
         logger.debug("Generating security report for user: {}", userId);
 

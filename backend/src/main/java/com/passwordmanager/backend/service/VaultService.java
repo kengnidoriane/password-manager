@@ -29,6 +29,9 @@ import io.micrometer.core.instrument.Timer;
 import jakarta.persistence.OptimisticLockException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,6 +70,7 @@ public class VaultService {
     private final SecureNoteRepository secureNoteRepository;
     private final CustomMetricsService metricsService;
     private final AuditLogService auditLogService;
+    private final CacheMetricsService cacheMetricsService;
 
     public VaultService(VaultRepository vaultRepository,
                        UserRepository userRepository,
@@ -74,7 +78,8 @@ public class VaultService {
                        TagRepository tagRepository,
                        SecureNoteRepository secureNoteRepository,
                        CustomMetricsService metricsService,
-                       AuditLogService auditLogService) {
+                       AuditLogService auditLogService,
+                       CacheMetricsService cacheMetricsService) {
         this.vaultRepository = vaultRepository;
         this.userRepository = userRepository;
         this.folderRepository = folderRepository;
@@ -82,19 +87,23 @@ public class VaultService {
         this.secureNoteRepository = secureNoteRepository;
         this.metricsService = metricsService;
         this.auditLogService = auditLogService;
+        this.cacheMetricsService = cacheMetricsService;
     }
 
     /**
      * Retrieves all active vault entries for a user.
+     * Cached for 5 minutes to improve performance.
      * 
      * @param userId the user ID
      * @return list of credential responses
      * @throws IllegalArgumentException if user not found
      */
+    @Cacheable(value = "vaultMetadata", key = "#userId + ':credentials'", unless = "#result == null || #result.isEmpty()")
     @Transactional(readOnly = true)
     public List<CredentialResponse> getAllCredentials(UUID userId) {
         Timer.Sample sample = metricsService.startVaultOperationTimer();
         logger.debug("Retrieving all credentials for user: {}", userId);
+        cacheMetricsService.recordCacheMiss("vaultMetadata");
 
         try {
             // Verify user exists
@@ -129,6 +138,10 @@ public class VaultService {
      * @return the created credential response
      * @throws IllegalArgumentException if validation fails
      */
+    @Caching(evict = {
+        @CacheEvict(value = "vaultMetadata", key = "#userId + ':credentials'"),
+        @CacheEvict(value = "securityReports", key = "#userId")
+    })
     public CredentialResponse createCredential(UUID userId, CredentialRequest request) {
         Timer.Sample sample = metricsService.startVaultOperationTimer();
         logger.debug("Creating credential for user: {}", userId);
@@ -184,6 +197,10 @@ public class VaultService {
      * @throws IllegalArgumentException if validation fails
      * @throws OptimisticLockingFailureException if version conflict occurs
      */
+    @Caching(evict = {
+        @CacheEvict(value = "vaultMetadata", key = "#userId + ':credentials'"),
+        @CacheEvict(value = "securityReports", key = "#userId")
+    })
     public CredentialResponse updateCredential(UUID userId, UUID credentialId, CredentialRequest request) {
         logger.debug("Updating credential {} for user: {}", credentialId, userId);
 
@@ -236,6 +253,10 @@ public class VaultService {
      * @param credentialId the credential ID
      * @throws IllegalArgumentException if credential not found
      */
+    @Caching(evict = {
+        @CacheEvict(value = "vaultMetadata", key = "#userId + ':credentials'"),
+        @CacheEvict(value = "securityReports", key = "#userId")
+    })
     public void deleteCredential(UUID userId, UUID credentialId) {
         logger.debug("Soft deleting credential {} for user: {}", credentialId, userId);
 

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,6 +15,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.Duration;
 
@@ -51,14 +53,21 @@ public class RedisConfig {
     }
 
     /**
-     * Configures RedisCacheManager with default cache configuration.
+     * Configures RedisCacheManager with multiple cache configurations for different use cases.
+     * 
+     * Cache configurations:
+     * - sessions: 15 minutes TTL for user sessions
+     * - vaultMetadata: 5 minutes TTL for vault metadata
+     * - breachCheck: 24 hours TTL for breach check results
+     * - securityReports: 1 hour TTL for security analysis reports
      * 
      * @param connectionFactory Redis connection factory
-     * @return Configured RedisCacheManager
+     * @return Configured RedisCacheManager with multiple cache configurations
      */
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
-        RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
+        // Default cache configuration (5 minutes)
+        RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(5))
                 .serializeKeysWith(
                         RedisSerializationContext.SerializationPair.fromSerializer(
@@ -68,8 +77,28 @@ public class RedisConfig {
                                 createJsonSerializer()))
                 .disableCachingNullValues();
 
+        // Session cache configuration (15 minutes)
+        RedisCacheConfiguration sessionConfig = defaultConfig
+                .entryTtl(Duration.ofMinutes(15));
+
+        // Vault metadata cache configuration (5 minutes)
+        RedisCacheConfiguration vaultMetadataConfig = defaultConfig
+                .entryTtl(Duration.ofMinutes(5));
+
+        // Breach check cache configuration (24 hours)
+        RedisCacheConfiguration breachCheckConfig = defaultConfig
+                .entryTtl(Duration.ofHours(24));
+
+        // Security reports cache configuration (1 hour)
+        RedisCacheConfiguration securityReportsConfig = defaultConfig
+                .entryTtl(Duration.ofHours(1));
+
         return RedisCacheManager.builder(connectionFactory)
-                .cacheDefaults(config)
+                .cacheDefaults(defaultConfig)
+                .withCacheConfiguration("sessions", sessionConfig)
+                .withCacheConfiguration("vaultMetadata", vaultMetadataConfig)
+                .withCacheConfiguration("breachCheck", breachCheckConfig)
+                .withCacheConfiguration("securityReports", securityReportsConfig)
                 .build();
     }
 
@@ -93,3 +122,17 @@ public class RedisConfig {
         return new GenericJackson2JsonRedisSerializer(objectMapper);
     }
 }
+
+    /**
+     * Configures RestTemplate for external API calls (e.g., breach check service).
+     * 
+     * @param builder RestTemplateBuilder
+     * @return Configured RestTemplate
+     */
+    @Bean
+    public RestTemplate restTemplate(RestTemplateBuilder builder) {
+        return builder
+                .setConnectTimeout(Duration.ofSeconds(5))
+                .setReadTimeout(Duration.ofSeconds(10))
+                .build();
+    }
