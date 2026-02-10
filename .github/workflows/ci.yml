@@ -72,9 +72,21 @@ jobs:
         working-directory: ./backend
         run: mvn checkstyle:check
       
-      - name: Run Tests
+      - name: Run OWASP Dependency Check
         working-directory: ./backend
-        run: mvn test
+        run: mvn dependency-check:check
+        continue-on-error: true
+      
+      - name: Upload OWASP Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-dependency-check-report
+          path: backend/target/dependency-check-report.html
+      
+      - name: Run Tests with Coverage
+        working-directory: ./backend
+        run: mvn test jacoco:report
         env:
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/password_manager_test
           SPRING_DATASOURCE_USERNAME: postgres
@@ -86,11 +98,20 @@ jobs:
         working-directory: ./backend
         run: mvn clean package -DskipTests
       
+      - name: Generate Coverage Badge
+        uses: cicirello/jacoco-badge-generator@v2
+        with:
+          jacoco-csv-file: backend/target/site/jacoco/jacoco.csv
+          badges-directory: .github/badges
+          generate-branches-badge: true
+          generate-summary: true
+      
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
         with:
           files: ./backend/target/site/jacoco/jacoco.xml
           flags: backend
+          fail_ci_if_error: true
 
   # Frontend CI
   frontend-ci:
@@ -120,9 +141,14 @@ jobs:
         working-directory: ./frontend
         run: npx prettier --check .
       
-      - name: Run Tests
+      - name: Run Tests with Coverage
         working-directory: ./frontend
-        run: npm test -- --coverage
+        run: npm run test:coverage
+      
+      - name: Check Bundle Size
+        working-directory: ./frontend
+        run: npm run check-bundle-size
+        continue-on-error: true
       
       - name: Build
         working-directory: ./frontend
@@ -135,10 +161,21 @@ jobs:
         with:
           files: ./frontend/coverage/lcov.info
           flags: frontend
+          fail_ci_if_error: true
+      
+      - name: Comment PR with Coverage
+        if: github.event_name == 'pull_request'
+        uses: romeovs/lcov-reporter-action@v0.3.1
+        with:
+          lcov-file: ./frontend/coverage/lcov.info
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
   # Security scanning
   security-scan:
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
       
@@ -149,6 +186,7 @@ jobs:
           scan-ref: '.'
           format: 'sarif'
           output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
       
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
@@ -157,5 +195,48 @@ jobs:
       
       - name: Run npm audit (Frontend)
         working-directory: ./frontend
-        run: npm audit --audit-level=moderate
+        run: |
+          npm audit --audit-level=moderate || true
+          npm audit --json > npm-audit.json || true
         continue-on-error: true
+      
+      - name: Upload npm audit results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-report
+          path: frontend/npm-audit.json
+      
+      - name: Set up Node.js for Snyk
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+      
+      - name: Run Snyk Security Scan (Frontend)
+        working-directory: ./frontend
+        run: snyk test --severity-threshold=high || true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        continue-on-error: true
+      
+      - name: Set up JDK for OWASP
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+      
+      - name: Run OWASP Dependency Check (Backend)
+        working-directory: ./backend
+        run: mvn dependency-check:check || true
+        continue-on-error: true
+      
+      - name: Upload OWASP results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-report
+          path: backend/target/dependency-check-report.html
