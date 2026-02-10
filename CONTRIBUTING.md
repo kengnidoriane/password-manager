@@ -383,6 +383,24 @@ it('encryption round-trip should preserve data', () => {
 - [Guide de Dépannage](CICD_TROUBLESHOOTING.md)
 - [Spec du Projet](.kiro/specs/password-manager/)
 
+### Documentation Utilisateur
+
+- [Guide Utilisateur](docs/user/USER_GUIDE.md) - Manuel complet
+- [Démarrage Rapide](docs/user/QUICK_START.md) - Guide de démarrage
+- [FAQ](docs/user/FAQ.md) - Questions fréquentes
+- [Bonnes Pratiques de Sécurité](docs/user/SECURITY_BEST_PRACTICES.md) - Conseils de sécurité
+- [Guide Import/Export](docs/user/IMPORT_EXPORT_GUIDE.md) - Migration de données
+- [Dépannage](docs/user/TROUBLESHOOTING.md) - Résolution de problèmes
+
+### Documentation Développeur
+
+- [Onboarding Développeur](docs/developer/DEVELOPER_ONBOARDING.md) - Guide pour nouveaux développeurs
+- [Architecture](docs/developer/ARCHITECTURE.md) - Architecture système et décisions de conception
+- [Guide d'Intégration API](docs/developer/API_INTEGRATION_GUIDE.md) - Documentation API REST
+- [Schéma de Base de Données](docs/developer/DATABASE_SCHEMA.md) - Structure BDD et migrations
+- [Procédures de Déploiement](docs/developer/DEPLOYMENT_PROCEDURES.md) - Guide de déploiement
+- [Standards de Code](docs/developer/CODING_STANDARDS.md) - Standards et meilleures pratiques
+
 ### Outils
 
 - [Conventional Commits](https://www.conventionalcommits.org/)
