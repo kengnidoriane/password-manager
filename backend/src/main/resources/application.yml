@@ -217,9 +217,31 @@ springdoc:
     doc-expansion: none
     display-request-duration: true
     filter: true
+    try-it-out-enabled: true
+    persist-authorization: true
   show-actuator: false
   default-consumes-media-type: application/json
   default-produces-media-type: application/json
+  # Group endpoints by controller tags
+  group-configs:
+    - group: authentication
+      display-name: Authentication
+      paths-to-match: /api/v1/auth/**
+    - group: vault
+      display-name: Vault Management
+      paths-to-match: /api/v1/vault/**
+    - group: audit
+      display-name: Audit & Security
+      paths-to-match: /api/v1/audit/**
+    - group: sharing
+      display-name: Credential Sharing
+      paths-to-match: /api/v1/share/**
+    - group: settings
+      display-name: User Settings
+      paths-to-match: /api/v1/settings/**
+    - group: health
+      display-name: Health & Monitoring
+      paths-to-match: /actuator/**
 
 ---
 # Staging Profile
