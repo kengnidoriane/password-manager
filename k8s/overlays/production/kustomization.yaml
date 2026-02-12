@@ -1,0 +1,47 @@
+# Production environment overlay
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: password-manager
+
+# Base configuration
+bases:
+  - ../../
+
+# Common labels for production
+commonLabels:
+  environment: production
+
+# Replicas for production
+replicas:
+  - name: backend
+    count: 5
+  - name: frontend
+    count: 5
+
+# Images for production
+images:
+  - name: ghcr.io/your-username/password-manager-backend
+    newTag: v1.0.0  # Use specific version tags in production
+  - name: ghcr.io/your-username/password-manager-frontend
+    newTag: v1.0.0
+
+# ConfigMap overrides for production
+configMapGenerator:
+  - name: backend-config
+    behavior: merge
+    literals:
+      - SPRING_PROFILES_ACTIVE=prod
+      - LOGGING_LEVEL_ROOT=WARN
+      - LOGGING_LEVEL_COM_PASSWORDMANAGER=INFO
+      - CORS_ALLOWED_ORIGINS=https://passwordmanager.example.com
+
+  - name: frontend-config
+    behavior: merge
+    literals:
+      - NEXT_PUBLIC_API_URL=https://api.passwordmanager.example.com/api/v1
+
+# Patches for production-specific configurations
+patchesStrategicMerge:
+  - patch-hpa.yaml
+  - patch-pdb.yaml

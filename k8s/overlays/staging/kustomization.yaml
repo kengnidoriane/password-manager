@@ -1,0 +1,49 @@
+# Staging environment overlay
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: password-manager-staging
+
+# Base configuration
+bases:
+  - ../../
+
+# Namespace override
+nameSuffix: -staging
+
+# Common labels for staging
+commonLabels:
+  environment: staging
+
+# Replicas for staging (lower than production)
+replicas:
+  - name: backend
+    count: 2
+  - name: frontend
+    count: 2
+
+# Images for staging
+images:
+  - name: ghcr.io/your-username/password-manager-backend
+    newTag: staging
+  - name: ghcr.io/your-username/password-manager-frontend
+    newTag: staging
+
+# ConfigMap overrides for staging
+configMapGenerator:
+  - name: backend-config
+    behavior: merge
+    literals:
+      - SPRING_PROFILES_ACTIVE=staging
+      - LOGGING_LEVEL_ROOT=DEBUG
+      - CORS_ALLOWED_ORIGINS=https://staging.passwordmanager.example.com
+
+  - name: frontend-config
+    behavior: merge
+    literals:
+      - NEXT_PUBLIC_API_URL=https://api-staging.passwordmanager.example.com/api/v1
+
+# Patches for staging-specific configurations
+patchesStrategicMerge:
+  - patch-ingress.yaml
+  - patch-resources.yaml

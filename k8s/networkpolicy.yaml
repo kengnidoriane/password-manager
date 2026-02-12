@@ -1,0 +1,184 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-network-policy
+  namespace: password-manager
+  labels:
+    app: password-manager
+    component: backend
+spec:
+  podSelector:
+    matchLabels:
+      app: password-manager
+      component: backend
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow traffic from frontend
+    - from:
+        - podSelector:
+            matchLabels:
+              app: password-manager
+              component: frontend
+      ports:
+        - protocol: TCP
+          port: 8080
+    
+    # Allow traffic from ingress controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8080
+  
+  egress:
+    # Allow DNS
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+    
+    # Allow PostgreSQL
+    - to:
+        - podSelector:
+            matchLabels:
+              app: password-manager
+              component: postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+    
+    # Allow Redis
+    - to:
+        - podSelector:
+            matchLabels:
+              app: password-manager
+              component: redis
+      ports:
+        - protocol: TCP
+          port: 6379
+    
+    # Allow HTTPS for external APIs (breach check, etc.)
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 443
+    
+    # Allow SMTP for email
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 587
+        - protocol: TCP
+          port: 465
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: frontend-network-policy
+  namespace: password-manager
+  labels:
+    app: password-manager
+    component: frontend
+spec:
+  podSelector:
+    matchLabels:
+      app: password-manager
+      component: frontend
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow traffic from ingress controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 3000
+  
+  egress:
+    # Allow DNS
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+    
+    # Allow backend API
+    - to:
+        - podSelector:
+            matchLabels:
+              app: password-manager
+              component: backend
+      ports:
+        - protocol: TCP
+          port: 8080
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-network-policy
+  namespace: password-manager
+  labels:
+    app: password-manager
+    component: postgres
+spec:
+  podSelector:
+    matchLabels:
+      app: password-manager
+      component: postgres
+  policyTypes:
+    - Ingress
+  ingress:
+    # Only allow traffic from backend
+    - from:
+        - podSelector:
+            matchLabels:
+              app: password-manager
+              component: backend
+      ports:
+        - protocol: TCP
+          port: 5432
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: redis-network-policy
+  namespace: password-manager
+  labels:
+    app: password-manager
+    component: redis
+spec:
+  podSelector:
+    matchLabels:
+      app: password-manager
+      component: redis
+  policyTypes:
+    - Ingress
+  ingress:
+    # Only allow traffic from backend
+    - from:
+        - podSelector:
+            matchLabels:
+              app: password-manager
+              component: backend
+      ports:
+        - protocol: TCP
+          port: 6379

@@ -1,0 +1,25 @@
+# ServiceMonitor for Prometheus Operator
+# This requires Prometheus Operator to be installed in the cluster
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: backend-metrics
+  namespace: password-manager
+  labels:
+    app: password-manager
+    component: backend
+    prometheus: kube-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: password-manager
+      component: backend
+  endpoints:
+    - port: http
+      path: /actuator/prometheus
+      interval: 30s
+      scrapeTimeout: 10s
+      scheme: http
+  namespaceSelector:
+    matchNames:
+      - password-manager

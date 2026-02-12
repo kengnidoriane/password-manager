@@ -1,0 +1,100 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup
+  namespace: password-manager
+  labels:
+    app: password-manager
+    component: backup
+spec:
+  # Run daily at 2 AM
+  schedule: "0 2 * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: password-manager
+            component: backup
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: postgres-backup
+              image: postgres:16-alpine
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  BACKUP_FILE="/backup/password_manager_$(date +%Y%m%d_%H%M%S).sql"
+                  echo "Starting backup to $BACKUP_FILE"
+                  
+                  pg_dump -h postgres-service -U $POSTGRES_USER -d $POSTGRES_DB > $BACKUP_FILE
+                  
+                  if [ $? -eq 0 ]; then
+                    echo "Backup completed successfully"
+                    gzip $BACKUP_FILE
+                    echo "Backup compressed: ${BACKUP_FILE}.gz"
+                    
+                    # Keep only last 7 days of backups
+                    find /backup -name "*.sql.gz" -mtime +7 -delete
+                    echo "Old backups cleaned up"
+                  else
+                    echo "Backup failed"
+                    exit 1
+                  fi
+              env:
+                - name: POSTGRES_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: password-manager-secrets
+                      key: POSTGRES_USER
+                - name: POSTGRES_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: password-manager-secrets
+                      key: POSTGRES_PASSWORD
+                - name: POSTGRES_DB
+                  valueFrom:
+                    secretKeyRef:
+                      name: password-manager-secrets
+                      key: POSTGRES_DB
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: password-manager-secrets
+                      key: POSTGRES_PASSWORD
+              volumeMounts:
+                - name: backup-storage
+                  mountPath: /backup
+              resources:
+                requests:
+                  memory: "128Mi"
+                  cpu: "100m"
+                limits:
+                  memory: "256Mi"
+                  cpu: "200m"
+          volumes:
+            - name: backup-storage
+              persistentVolumeClaim:
+                claimName: backup-pvc
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backup-pvc
+  namespace: password-manager
+  labels:
+    app: password-manager
+    component: backup
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  # Uncomment and specify storageClassName if needed
+  # storageClassName: standard

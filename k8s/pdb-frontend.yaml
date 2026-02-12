@@ -1,0 +1,15 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: frontend-pdb
+  namespace: password-manager
+  labels:
+    app: password-manager
+    component: frontend
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: password-manager
+      component: frontend
+  unhealthyPodEvictionPolicy: AlwaysAllow

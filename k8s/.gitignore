@@ -1,0 +1,15 @@
+# Ignore files with actual secrets
+secret-*.yaml
+*-secrets.yaml
+
+# Ignore generated files
+*.log
+*.tmp
+
+# Ignore backup files
+*.bak
+*~
+
+# Ignore local testing files
+test-*.yaml
+local-*.yaml

@@ -1,0 +1,63 @@
+# Terraform Variables Example
+# Copy this file to terraform.tfvars and fill in your values
+
+# AWS Configuration
+aws_region  = "us-east-1"
+environment = "development" # development, staging, or production
+
+# Domain Configuration
+domain_name         = "passwordmanager.example.com"
+create_hosted_zone  = false
+existing_zone_id    = "" # Required if create_hosted_zone is false
+
+# VPC Configuration
+vpc_cidr = "10.0.0.0/16"
+
+# EKS Configuration
+kubernetes_version = "1.28"
+node_groups = {
+  general = {
+    desired_size   = 3
+    min_size       = 2
+    max_size       = 10
+    instance_types = ["t3.medium"]
+    capacity_type  = "ON_DEMAND"
+    disk_size      = 50
+  }
+}
+
+# Database Configuration
+database_name               = "passwordmanager"
+database_master_username    = "dbadmin"
+database_instance_class     = "db.t3.medium"
+database_allocated_storage  = 100
+database_backup_retention   = 7
+
+# Redis Configuration
+redis_node_type  = "cache.t3.medium"
+redis_num_nodes  = 2
+
+# CDN Configuration
+cdn_price_class = "PriceClass_100" # PriceClass_100, PriceClass_200, or PriceClass_All
+
+# Monitoring Configuration
+alert_email       = "alerts@example.com"
+slack_webhook_url = "" # Optional: Slack webhook URL for alerts
+
+# S3 Lifecycle Configuration
+s3_lifecycle_rules = [
+  {
+    id                       = "backup-lifecycle"
+    enabled                  = true
+    expiration_days          = 90
+    transition_days          = 30
+    transition_storage_class = "STANDARD_IA"
+  }
+]
+
+# Additional Tags
+additional_tags = {
+  Team       = "DevOps"
+  CostCenter = "Engineering"
+  Terraform  = "true"
+}

@@ -1,0 +1,56 @@
+# Maven build output
+target/
+!target/*.jar
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README.md
+CONFIGURATION.md
+API_DOCUMENTATION.md
+SWAGGER_DOCUMENTATION_SUMMARY.md
+CACHING_STRATEGY.md
+DATABASE_OPTIMIZATION.md
+
+# Test files (tests run in CI, not in Docker build)
+src/test/
+*.test.java
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Docker files
+Dockerfile
+.dockerignore
+docker-compose*.yml

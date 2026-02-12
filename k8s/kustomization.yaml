@@ -1,0 +1,66 @@
+# Kustomization file for Password Manager
+# This allows for easy customization and deployment using kubectl apply -k
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: password-manager
+
+# Common labels applied to all resources
+commonLabels:
+  app: password-manager
+  managed-by: kustomize
+
+# Resources to deploy
+resources:
+  - namespace.yaml
+  - secret.yaml
+  - configmap-backend.yaml
+  - configmap-frontend.yaml
+  - postgres-statefulset.yaml
+  - redis-statefulset.yaml
+  - backend-deployment.yaml
+  - backend-service.yaml
+  - frontend-deployment.yaml
+  - frontend-service.yaml
+  - ingress.yaml
+  - hpa-backend.yaml
+  - hpa-frontend.yaml
+  - pdb-backend.yaml
+  - pdb-frontend.yaml
+  - networkpolicy.yaml
+  - resourcequota.yaml
+  - backup-cronjob.yaml
+
+# Optional: ServiceMonitor (requires Prometheus Operator)
+# - servicemonitor.yaml
+
+# Images to use (can be overridden with kustomize edit set image)
+images:
+  - name: ghcr.io/your-username/password-manager-backend
+    newTag: latest
+  - name: ghcr.io/your-username/password-manager-frontend
+    newTag: latest
+
+# ConfigMap generator (alternative to configmap files)
+# configMapGenerator:
+#   - name: backend-config
+#     literals:
+#       - SPRING_PROFILES_ACTIVE=prod
+
+# Secret generator (alternative to secret files)
+# secretGenerator:
+#   - name: password-manager-secrets
+#     literals:
+#       - POSTGRES_PASSWORD=changeme
+
+# Patches for environment-specific customizations
+# patchesStrategicMerge:
+#   - overlays/production/patch.yaml
+
+# Replicas (can be overridden)
+replicas:
+  - name: backend
+    count: 3
+  - name: frontend
+    count: 3

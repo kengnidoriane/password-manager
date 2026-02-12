@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+  namespace: password-manager
+  labels:
+    app: password-manager
+    component: frontend
+data:
+  # Next.js Configuration
+  NODE_ENV: "production"
+  NEXT_TELEMETRY_DISABLED: "1"
+  PORT: "3000"
+  HOSTNAME: "0.0.0.0"
+  
+  # API Configuration
+  NEXT_PUBLIC_API_URL: "https://api.passwordmanager.example.com/api/v1"
+  
+  # PWA Configuration
+  NEXT_PUBLIC_APP_NAME: "Password Manager"
+  NEXT_PUBLIC_APP_SHORT_NAME: "PassMgr"
+  NEXT_PUBLIC_APP_DESCRIPTION: "Secure Password Manager PWA"
