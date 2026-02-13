@@ -4,11 +4,15 @@
 # ============================================
 
 # Stage 1: Dependencies stage
-FROM node:20-alpine AS deps
+FROM node:20-slim AS deps
 WORKDIR /app
 
-# Install libc6-compat for compatibility with some native modules
-RUN apk add --no-cache libc6-compat
+# Install necessary packages for native modules
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy package files
 COPY package.json package-lock.json ./
@@ -21,7 +25,7 @@ RUN npm ci --only=production --ignore-scripts && \
     npm ci --ignore-scripts
 
 # Stage 2: Build stage
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 WORKDIR /app
 
 # Copy dependencies from deps stage
@@ -40,15 +44,18 @@ RUN npm run build && \
     ls -lh .next
 
 # Stage 3: Runtime stage (minimal production image)
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 WORKDIR /app
 
 # Install curl for health checks and dumb-init for proper signal handling
-RUN apk add --no-cache curl dumb-init
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    dumb-init \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -u 1001 -S nextjs -G nodejs
+RUN groupadd -g 1001 nodejs && \
+    useradd -u 1001 -g nodejs -s /bin/bash -m nextjs
 
 # Set environment variables
 ENV NODE_ENV=production

@@ -1,0 +1,318 @@
+# Alertmanager Deployment for Alert Routing and Notification
+---
+# Alertmanager ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: monitoring
+  labels:
+    app: alertmanager
+data:
+  alertmanager.yml: |
+    global:
+      resolve_timeout: 5m
+      # SMTP configuration for email alerts
+      smtp_smarthost: 'smtp.gmail.com:587'
+      smtp_from: 'alerts@passwordmanager.example.com'
+      smtp_auth_username: 'alerts@passwordmanager.example.com'
+      smtp_auth_password: '${SMTP_PASSWORD}'
+      smtp_require_tls: true
+
+    # Templates for alert messages
+    templates:
+      - '/etc/alertmanager/templates/*.tmpl'
+
+    # Route tree for alert routing
+    route:
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 12h
+      receiver: 'default'
+      
+      routes:
+        # Critical alerts - immediate notification
+        - match:
+            severity: critical
+          receiver: 'critical-alerts'
+          group_wait: 0s
+          repeat_interval: 5m
+        
+        # Security alerts - immediate notification
+        - match:
+            component: security
+          receiver: 'security-alerts'
+          group_wait: 0s
+          repeat_interval: 15m
+        
+        # Warning alerts - grouped notification
+        - match:
+            severity: warning
+          receiver: 'warning-alerts'
+          group_wait: 30s
+          repeat_interval: 1h
+        
+        # Info alerts - daily digest
+        - match:
+            severity: info
+          receiver: 'info-alerts'
+          group_wait: 5m
+          repeat_interval: 24h
+
+    # Inhibition rules to prevent alert spam
+    inhibit_rules:
+      # Inhibit warning if critical is firing
+      - source_match:
+          severity: 'critical'
+        target_match:
+          severity: 'warning'
+        equal: ['alertname', 'instance']
+      
+      # Inhibit endpoint down if service is down
+      - source_match:
+          alertname: 'BackendDown'
+        target_match:
+          alertname: 'EndpointDown'
+        equal: ['instance']
+
+    # Receivers for different alert types
+    receivers:
+      - name: 'default'
+        email_configs:
+          - to: 'ops-team@passwordmanager.example.com'
+            headers:
+              Subject: '[Password Manager] {{ .GroupLabels.alertname }}'
+            html: '{{ template "email.default.html" . }}'
+
+      - name: 'critical-alerts'
+        email_configs:
+          - to: 'oncall@passwordmanager.example.com'
+            headers:
+              Subject: '[CRITICAL] Password Manager Alert'
+            html: '{{ template "email.default.html" . }}'
+        slack_configs:
+          - api_url: '${SLACK_WEBHOOK_URL}'
+            channel: '#alerts-critical'
+            title: 'Critical Alert: {{ .GroupLabels.alertname }}'
+            text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+            send_resolved: true
+        pagerduty_configs:
+          - service_key: '${PAGERDUTY_SERVICE_KEY}'
+            description: '{{ .GroupLabels.alertname }}'
+
+      - name: 'security-alerts'
+        email_configs:
+          - to: 'security@passwordmanager.example.com'
+            headers:
+              Subject: '[SECURITY] Password Manager Alert'
+            html: '{{ template "email.default.html" . }}'
+        slack_configs:
+          - api_url: '${SLACK_WEBHOOK_URL}'
+            channel: '#alerts-security'
+            title: 'Security Alert: {{ .GroupLabels.alertname }}'
+            text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+            send_resolved: true
+
+      - name: 'warning-alerts'
+        email_configs:
+          - to: 'ops-team@passwordmanager.example.com'
+            headers:
+              Subject: '[WARNING] Password Manager Alert'
+            html: '{{ template "email.default.html" . }}'
+        slack_configs:
+          - api_url: '${SLACK_WEBHOOK_URL}'
+            channel: '#alerts-warning'
+            title: 'Warning: {{ .GroupLabels.alertname }}'
+            text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+
+      - name: 'info-alerts'
+        email_configs:
+          - to: 'ops-team@passwordmanager.example.com'
+            headers:
+              Subject: '[INFO] Password Manager Daily Digest'
+            html: '{{ template "email.default.html" . }}'
+
+  email-template.tmpl: |
+    {{ define "email.default.html" }}
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; }
+        .alert { padding: 10px; margin: 10px 0; border-left: 4px solid; }
+        .critical { border-color: #d32f2f; background-color: #ffebee; }
+        .warning { border-color: #f57c00; background-color: #fff3e0; }
+        .info { border-color: #1976d2; background-color: #e3f2fd; }
+      </style>
+    </head>
+    <body>
+      <h2>Password Manager Alerts</h2>
+      {{ range .Alerts }}
+      <div class="alert {{ .Labels.severity }}">
+        <h3>{{ .Labels.alertname }}</h3>
+        <p><strong>Severity:</strong> {{ .Labels.severity }}</p>
+        <p><strong>Component:</strong> {{ .Labels.component }}</p>
+        <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+        <p><strong>Started:</strong> {{ .StartsAt }}</p>
+        {{ if .EndsAt }}
+        <p><strong>Ended:</strong> {{ .EndsAt }}</p>
+        {{ end }}
+      </div>
+      {{ end }}
+    </body>
+    </html>
+    {{ end }}
+
+---
+# Alertmanager Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager
+  namespace: monitoring
+  labels:
+    app: alertmanager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alertmanager
+  template:
+    metadata:
+      labels:
+        app: alertmanager
+    spec:
+      containers:
+        - name: alertmanager
+          image: prom/alertmanager:v0.26.0
+          args:
+            - '--config.file=/etc/alertmanager/alertmanager.yml'
+            - '--storage.path=/alertmanager'
+            - '--web.external-url=https://alertmanager.example.com'
+          ports:
+            - containerPort: 9093
+              name: http
+          env:
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: alertmanager-secrets
+                  key: smtp-password
+            - name: SLACK_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: alertmanager-secrets
+                  key: slack-webhook-url
+            - name: PAGERDUTY_SERVICE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: alertmanager-secrets
+                  key: pagerduty-service-key
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/alertmanager
+            - name: storage
+              mountPath: /alertmanager
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: 9093
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: 9093
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: alertmanager-config
+        - name: storage
+          persistentVolumeClaim:
+            claimName: alertmanager-storage
+
+---
+# Alertmanager PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: alertmanager-storage
+  namespace: monitoring
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+# Alertmanager Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  namespace: monitoring
+  labels:
+    app: alertmanager
+spec:
+  type: ClusterIP
+  selector:
+    app: alertmanager
+  ports:
+    - port: 9093
+      name: http
+      targetPort: 9093
+
+---
+# Alertmanager Secrets
+apiVersion: v1
+kind: Secret
+metadata:
+  name: alertmanager-secrets
+  namespace: monitoring
+type: Opaque
+stringData:
+  smtp-password: "changeme-smtp-password"
+  slack-webhook-url: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+  pagerduty-service-key: "changeme-pagerduty-key"
+
+---
+# Alertmanager Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: alertmanager
+  namespace: monitoring
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: alertmanager-basic-auth
+    nginx.ingress.kubernetes.io/auth-realm: 'Authentication Required'
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - alertmanager.example.com
+      secretName: alertmanager-tls
+  rules:
+    - host: alertmanager.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: alertmanager
+                port:
+                  number: 9093

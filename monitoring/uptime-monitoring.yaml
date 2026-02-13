@@ -1,0 +1,254 @@
+# Uptime Monitoring Configuration using Blackbox Exporter
+---
+# Blackbox Exporter ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: blackbox-exporter-config
+  namespace: monitoring
+data:
+  blackbox.yml: |
+    modules:
+      http_2xx:
+        prober: http
+        timeout: 5s
+        http:
+          valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+          valid_status_codes: [200, 201, 204]
+          method: GET
+          preferred_ip_protocol: "ip4"
+          follow_redirects: true
+          fail_if_ssl: false
+          fail_if_not_ssl: true
+          tls_config:
+            insecure_skip_verify: false
+
+      http_post_2xx:
+        prober: http
+        timeout: 5s
+        http:
+          method: POST
+          headers:
+            Content-Type: application/json
+          body: '{}'
+          valid_status_codes: [200, 201, 400, 401]
+
+      tcp_connect:
+        prober: tcp
+        timeout: 5s
+
+      icmp:
+        prober: icmp
+        timeout: 5s
+        icmp:
+          preferred_ip_protocol: "ip4"
+
+---
+# Blackbox Exporter Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blackbox-exporter
+  namespace: monitoring
+  labels:
+    app: blackbox-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blackbox-exporter
+  template:
+    metadata:
+      labels:
+        app: blackbox-exporter
+    spec:
+      containers:
+        - name: blackbox-exporter
+          image: prom/blackbox-exporter:v0.24.0
+          args:
+            - "--config.file=/config/blackbox.yml"
+          ports:
+            - containerPort: 9115
+              name: http
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          volumeMounts:
+            - name: config
+              mountPath: /config
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9115
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9115
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: blackbox-exporter-config
+
+---
+# Blackbox Exporter Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: blackbox-exporter
+  namespace: monitoring
+  labels:
+    app: blackbox-exporter
+spec:
+  type: ClusterIP
+  selector:
+    app: blackbox-exporter
+  ports:
+    - port: 9115
+      name: http
+      targetPort: 9115
+
+---
+# Prometheus ServiceMonitor for Blackbox Exporter
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: blackbox-exporter
+  namespace: monitoring
+  labels:
+    app: blackbox-exporter
+spec:
+  selector:
+    matchLabels:
+      app: blackbox-exporter
+  endpoints:
+    - port: http
+      interval: 30s
+      path: /metrics
+
+---
+# Prometheus Probe for Frontend Health Check
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: frontend-health
+  namespace: monitoring
+spec:
+  prober:
+    url: blackbox-exporter:9115
+  module: http_2xx
+  targets:
+    staticConfig:
+      static:
+        - https://app.passwordmanager.example.com
+        - https://app.passwordmanager.example.com/health
+  interval: 30s
+  scrapeTimeout: 10s
+
+---
+# Prometheus Probe for Backend Health Check
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: backend-health
+  namespace: monitoring
+spec:
+  prober:
+    url: blackbox-exporter:9115
+  module: http_2xx
+  targets:
+    staticConfig:
+      static:
+        - https://api.passwordmanager.example.com/actuator/health
+        - https://api.passwordmanager.example.com/api/v1/health
+  interval: 30s
+  scrapeTimeout: 10s
+
+---
+# Prometheus Probe for API Endpoints
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: api-endpoints
+  namespace: monitoring
+spec:
+  prober:
+    url: blackbox-exporter:9115
+  module: http_post_2xx
+  targets:
+    staticConfig:
+      static:
+        - https://api.passwordmanager.example.com/api/v1/auth/login
+  interval: 60s
+  scrapeTimeout: 10s
+
+---
+# Uptime Alerting Rules
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: uptime-alerts
+  namespace: monitoring
+  labels:
+    prometheus: kube-prometheus
+spec:
+  groups:
+    - name: uptime
+      interval: 30s
+      rules:
+        - alert: EndpointDown
+          expr: probe_success == 0
+          for: 2m
+          labels:
+            severity: critical
+            component: uptime
+          annotations:
+            summary: "Endpoint is down"
+            description: "Endpoint {{ $labels.instance }} has been down for more than 2 minutes"
+
+        - alert: EndpointSlowResponse
+          expr: probe_duration_seconds > 3
+          for: 5m
+          labels:
+            severity: warning
+            component: uptime
+          annotations:
+            summary: "Endpoint slow response"
+            description: "Endpoint {{ $labels.instance }} response time is {{ $value }}s"
+
+        - alert: SSLCertificateExpiringSoon
+          expr: probe_ssl_earliest_cert_expiry - time() < 86400 * 30
+          for: 1h
+          labels:
+            severity: warning
+            component: ssl
+          annotations:
+            summary: "SSL certificate expiring soon"
+            description: "SSL certificate for {{ $labels.instance }} expires in {{ $value | humanizeDuration }}"
+
+        - alert: SSLCertificateExpired
+          expr: probe_ssl_earliest_cert_expiry - time() < 0
+          for: 5m
+          labels:
+            severity: critical
+            component: ssl
+          annotations:
+            summary: "SSL certificate expired"
+            description: "SSL certificate for {{ $labels.instance }} has expired"
+
+        - alert: HighHTTPErrorRate
+          expr: rate(probe_http_status_code{code=~"5.."}[5m]) > 0.05
+          for: 5m
+          labels:
+            severity: warning
+            component: uptime
+          annotations:
+            summary: "High HTTP error rate"
+            description: "HTTP error rate is {{ $value | humanizePercentage }} for {{ $labels.instance }}"

@@ -1,0 +1,271 @@
+# Grafana Dashboard ConfigMap
+# This ConfigMap contains dashboard definitions that will be automatically loaded by Grafana
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  password-manager-overview.json: |
+    {
+      "dashboard": {
+        "title": "Password Manager - Overview",
+        "tags": ["password-manager", "overview"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "title": "Request Rate",
+            "targets": [
+              {
+                "expr": "rate(http_server_requests_seconds_count[5m])",
+                "legendFormat": "{{uri}}"
+              }
+            ],
+            "type": "graph"
+          },
+          {
+            "title": "Error Rate",
+            "targets": [
+              {
+                "expr": "rate(http_server_requests_seconds_count{status=~\"5..\"}[5m])",
+                "legendFormat": "{{uri}}"
+              }
+            ],
+            "type": "graph"
+          },
+          {
+            "title": "Response Time (95th percentile)",
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, rate(http_server_requests_seconds_bucket[5m]))",
+                "legendFormat": "{{uri}}"
+              }
+            ],
+            "type": "graph"
+          },
+          {
+            "title": "Active Users",
+            "targets": [
+              {
+                "expr": "active_sessions_total",
+                "legendFormat": "Active Sessions"
+              }
+            ],
+            "type": "stat"
+          },
+          {
+            "title": "CPU Usage",
+            "targets": [
+              {
+                "expr": "rate(process_cpu_usage[5m])",
+                "legendFormat": "{{instance}}"
+              }
+            ],
+            "type": "graph"
+          },
+          {
+            "title": "Memory Usage",
+            "targets": [
+              {
+                "expr": "jvm_memory_used_bytes{area=\"heap\"} / jvm_memory_max_bytes{area=\"heap\"}",
+                "legendFormat": "{{instance}}"
+              }
+            ],
+            "type": "graph"
+          }
+        ]
+      }
+    }
+
+  password-manager-security.json: |
+    {
+      "dashboard": {
+        "title": "Password Manager - Security",
+        "tags": ["password-manager", "security"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "title": "Failed Login Attempts",
+            "targets": [
+              {
+                "expr": "rate(authentication_failures_total[5m])",
+                "legendFormat": "Failed Logins"
+              }
+            ],
+            "type": "graph"
+          },
+          {
+            "title": "Rate Limit Exceeded",
+            "targets": [
+              {
+                "expr": "rate(rate_limit_exceeded_total[5m])",
+                "legendFormat": "{{endpoint}}"
+              }
+            ],
+            "type": "graph"
+          },
+          {
+            "title": "Suspicious Activity",
+            "targets": [
+              {
+                "expr": "rate(suspicious_activity_total[5m])",
+                "legendFormat": "{{type}}"
+              }
+            ],
+            "type": "graph"
+          },
+          {
+            "title": "2FA Failures",
+            "targets": [
+              {
+                "expr": "rate(two_factor_failures_total[5m])",
+                "legendFormat": "2FA Failures"
+              }
+            ],
+            "type": "graph"
+          },
+          {
+            "title": "Vault Access Events",
+            "targets": [
+              {
+                "expr": "rate(vault_access_total[5m])",
+                "legendFormat": "{{action}}"
+              }
+            ],
+            "type": "graph"
+          }
+        ]
+      }
+    }
+
+  password-manager-database.json: |
+    {
+      "dashboard": {
+        "title": "Password Manager - Database",
+        "tags": ["password-manager", "database"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "title": "Database Connection Pool",
+            "targets": [
+              {
+                "expr": "hikaricp_connections_active",
+                "legendFormat": "Active"
+              },
+              {
+                "expr": "hikaricp_connections_idle",
+                "legendFormat": "Idle"
+              },
+              {
+                "expr": "hikaricp_connections_max",
+                "legendFormat": "Max"
+              }
+            ],
+            "type": "graph"
+          },
+          {
+            "title": "Query Duration",
+            "targets": [
+              {
+                "expr": "rate(database_query_duration_seconds_sum[5m]) / rate(database_query_duration_seconds_count[5m])",
+                "legendFormat": "Average Query Time"
+              }
+            ],
+            "type": "graph"
+          },
+          {
+            "title": "Database Errors",
+            "targets": [
+              {
+                "expr": "rate(database_errors_total[5m])",
+                "legendFormat": "{{type}}"
+              }
+            ],
+            "type": "graph"
+          },
+          {
+            "title": "Slow Queries",
+            "targets": [
+              {
+                "expr": "slow_queries_total",
+                "legendFormat": "Slow Queries"
+              }
+            ],
+            "type": "stat"
+          }
+        ]
+      }
+    }
+
+  password-manager-business.json: |
+    {
+      "dashboard": {
+        "title": "Password Manager - Business Metrics",
+        "tags": ["password-manager", "business"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "title": "User Registrations",
+            "targets": [
+              {
+                "expr": "rate(user_registrations_total[1h])",
+                "legendFormat": "Registrations/hour"
+              }
+            ],
+            "type": "graph"
+          },
+          {
+            "title": "Active Users",
+            "targets": [
+              {
+                "expr": "active_users_total",
+                "legendFormat": "Active Users"
+              }
+            ],
+            "type": "stat"
+          },
+          {
+            "title": "Vault Operations",
+            "targets": [
+              {
+                "expr": "rate(vault_operations_total[5m])",
+                "legendFormat": "{{operation}}"
+              }
+            ],
+            "type": "graph"
+          },
+          {
+            "title": "Password Generations",
+            "targets": [
+              {
+                "expr": "rate(password_generations_total[5m])",
+                "legendFormat": "Generations/sec"
+              }
+            ],
+            "type": "graph"
+          },
+          {
+            "title": "Sync Operations",
+            "targets": [
+              {
+                "expr": "rate(vault_sync_total[5m])",
+                "legendFormat": "{{status}}"
+              }
+            ],
+            "type": "graph"
+          },
+          {
+            "title": "Import/Export Operations",
+            "targets": [
+              {
+                "expr": "rate(import_export_operations_total[5m])",
+                "legendFormat": "{{operation}}"
+              }
+            ],
+            "type": "graph"
+          }
+        ]
+      }
+    }
