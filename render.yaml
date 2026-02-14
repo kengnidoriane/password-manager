@@ -26,15 +26,9 @@ services:
           name: password-manager-db
           property: password
       - key: SPRING_REDIS_HOST
-        fromService:
-          type: redis
-          name: password-manager-redis
-          property: host
+        value: placeholder-redis-host
       - key: SPRING_REDIS_PORT
-        fromService:
-          type: redis
-          name: password-manager-redis
-          property: port
+        value: 6379
       - key: JWT_SECRET
         generateValue: true
       - key: CORS_ALLOWED_ORIGINS
@@ -44,10 +38,5 @@ databases:
   # PostgreSQL Database
   - name: password-manager-db
     databaseName: password_manager
-    plan: free
-    region: frankfurt
-
-  # Redis Cache
-  - name: password-manager-redis
     plan: free
     region: frankfurt
