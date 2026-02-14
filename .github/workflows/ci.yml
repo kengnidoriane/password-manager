@@ -107,7 +107,7 @@ jobs:
           generate-summary: true
       
       - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: ./backend/target/site/jacoco/jacoco.xml
           flags: backend
@@ -157,7 +157,7 @@ jobs:
           NEXT_PUBLIC_API_URL: http://localhost:8080/api/v1
       
       - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: ./frontend/coverage/lcov.info
           flags: frontend
