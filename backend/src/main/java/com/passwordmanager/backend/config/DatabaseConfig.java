@@ -12,7 +12,7 @@ import javax.sql.DataSource;
 
 /**
  * Database configuration to handle Render.com DATABASE_URL format
- * Converts postgres:// to jdbc:postgresql://
+ * Converts postgres:// or postgresql:// to jdbc:postgresql://
  */
 @Configuration
 public class DatabaseConfig {
@@ -25,15 +25,25 @@ public class DatabaseConfig {
         String username = System.getenv("SPRING_DATASOURCE_USERNAME");
         String password = System.getenv("SPRING_DATASOURCE_PASSWORD");
         
-        // Convert Render's postgres:// to JDBC format
-        if (databaseUrl != null && databaseUrl.startsWith("postgres://")) {
-            databaseUrl = databaseUrl.replace("postgres://", "jdbc:postgresql://");
+        // Convert Render's postgres:// or postgresql:// to JDBC format
+        if (databaseUrl != null) {
+            if (databaseUrl.startsWith("postgres://")) {
+                databaseUrl = databaseUrl.replace("postgres://", "jdbc:postgresql://");
+            } else if (databaseUrl.startsWith("postgresql://")) {
+                databaseUrl = "jdbc:" + databaseUrl;
+            }
         }
         
         // If DATABASE_URL is not set, fall back to SPRING_DATASOURCE_URL
         if (databaseUrl == null) {
             databaseUrl = System.getenv("SPRING_DATASOURCE_URL");
         }
+        
+        // Log for debugging (remove in production)
+        System.out.println("=== DATABASE CONFIG ===");
+        System.out.println("Final JDBC URL: " + databaseUrl);
+        System.out.println("Username: " + username);
+        System.out.println("======================");
         
         // Create HikariCP configuration
         HikariConfig config = new HikariConfig();
