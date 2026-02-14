@@ -4,7 +4,7 @@
 # ============================================
 
 # Stage 1: Dependencies cache layer
-FROM maven:3.9-eclipse-temurin-17-alpine AS dependencies
+FROM maven:3-eclipse-temurin-25-alpine AS dependencies
 WORKDIR /app
 # Copy only pom.xml to cache dependencies separately
 COPY pom.xml .
@@ -12,7 +12,7 @@ COPY pom.xml .
 RUN mvn dependency:go-offline -B
 
 # Stage 2: Build stage
-FROM maven:3.9-eclipse-temurin-17-alpine AS build
+FROM maven:3-eclipse-temurin-25-alpine AS build
 WORKDIR /app
 # Copy cached dependencies from previous stage
 COPY --from=dependencies /root/.m2 /root/.m2
