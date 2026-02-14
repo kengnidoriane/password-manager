@@ -1,7 +1,7 @@
 # Dockerfile Simplifié pour Production
 # Build en une seule étape pour éviter les problèmes
 
-FROM eclipse-temurin:17-jdk-alpine
+FROM eclipse-temurin:25-jdk-alpine
 
 WORKDIR /app
 
