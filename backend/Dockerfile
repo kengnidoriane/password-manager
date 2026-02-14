@@ -18,11 +18,11 @@ WORKDIR /app
 COPY --from=dependencies /root/.m2 /root/.m2
 # Copy source code
 COPY pom.xml .
-COPY src ./src
+COPY src/main ./src/main
 COPY checkstyle.xml .
 COPY owasp-suppressions.xml .
-# Build the application (skip tests for faster builds, tests run in CI)
-RUN mvn clean package -DskipTests -DskipCheckstyle -Dspotbugs.skip=true -Ddependency-check.skip=true -B && \
+# Build the application (skip tests completely - don't even compile them)
+RUN mvn clean package -DskipTests -Dmaven.test.skip=true -DskipCheckstyle -Dspotbugs.skip=true -Ddependency-check.skip=true -B && \
     # Extract the built JAR name for verification
     ls -lh /app/target/*.jar
 
