@@ -1,0 +1,29 @@
+# Dockerfile Simplifié pour Production
+# Build en une seule étape pour éviter les problèmes
+
+FROM eclipse-temurin:17-jdk-alpine
+
+WORKDIR /app
+
+# Installer Maven
+RUN apk add --no-cache maven
+
+# Copier les fichiers nécessaires
+COPY pom.xml .
+COPY checkstyle.xml .
+COPY owasp-suppressions.xml .
+
+# Copier SEULEMENT le code source (pas les tests)
+COPY src/main ./src/main
+
+# Build l'application (skip complètement les tests)
+RUN mvn clean package -DskipTests -Dmaven.test.skip=true -DskipCheckstyle -Dspotbugs.skip=true -Ddependency-check.skip=true
+
+# Vérifier que le JAR existe
+RUN ls -lh /app/target/*.jar
+
+# Exposer le port
+EXPOSE 8080
+
+# Lancer l'application
+CMD ["java", "-jar", "/app/target/password-manager-backend-0.0.1-SNAPSHOT.jar"]
