@@ -13,7 +13,7 @@ services:
         value: prod
       - key: SERVER_PORT
         value: 8080
-      - key: SPRING_DATASOURCE_URL
+      - key: DATABASE_URL
         fromDatabase:
           name: password-manager-db
           property: connectionString
@@ -26,9 +26,13 @@ services:
           name: password-manager-db
           property: password
       - key: SPRING_REDIS_HOST
-        value: placeholder-redis-host
+        value: correct-hare-53244.upstash.io
       - key: SPRING_REDIS_PORT
         value: 6379
+      - key: SPRING_REDIS_PASSWORD
+        value: Ac_8AAIncDIzOWFkN2FiZTg2M2M0MmM3YTJjYjBmYmU5OTk4YTU4YXAyNTMyNDQ
+      - key: SPRING_REDIS_SSL_ENABLED
+        value: true
       - key: JWT_SECRET
         generateValue: true
       - key: CORS_ALLOWED_ORIGINS
