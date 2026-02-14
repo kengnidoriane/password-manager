@@ -1,6 +1,7 @@
 # Environment files with secrets (DO NOT COMMIT)
 .env
 .env.local
+.env.prod
 .env.*.local
 .env.production
 .env.staging

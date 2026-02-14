@@ -1,0 +1,55 @@
+services:
+  # Backend Spring Boot
+  - type: web
+    name: password-manager-backend
+    env: java
+    region: frankfurt
+    plan: free
+    buildCommand: cd backend && mvn clean package -DskipTests
+    startCommand: cd backend && java -jar target/password-manager-backend-0.0.1-SNAPSHOT.jar
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: SERVER_PORT
+        value: 8080
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: password-manager-db
+          property: connectionString
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: password-manager-db
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: password-manager-db
+          property: password
+      - key: SPRING_REDIS_HOST
+        fromService:
+          type: redis
+          name: password-manager-redis
+          property: host
+      - key: SPRING_REDIS_PORT
+        fromService:
+          type: redis
+          name: password-manager-redis
+          property: port
+      - key: JWT_SECRET
+        generateValue: true
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://your-app.vercel.app
+
+databases:
+  # PostgreSQL Database
+  - name: password-manager-db
+    databaseName: password_manager
+    user: postgres
+    plan: free
+    region: frankfurt
+
+  # Redis Cache
+  - name: password-manager-redis
+    plan: free
+    region: frankfurt
