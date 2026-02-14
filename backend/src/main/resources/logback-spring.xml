@@ -43,9 +43,8 @@
     </springProfile>
 
     <springProfile name="prod">
-        <!-- Production profile: JSON file logging with rotation -->
-        <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-            <file>/var/log/password-manager/application.json</file>
+        <!-- Production profile: JSON console logging (for containers) -->
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
             <encoder class="net.logstash.logback.encoder.LogstashEncoder">
                 <includeContext>true</includeContext>
                 <includeMdc>true</includeMdc>
@@ -54,29 +53,13 @@
                     <timestamp>@timestamp</timestamp>
                     <message>message</message>
                     <level>level</level>
-                    <thread>thread</thread>
-                    <logger>logger</logger>
+                    <thread>thread_name</thread>
+                    <logger>logger_name</logger>
                 </fieldNames>
             </encoder>
-            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-                <fileNamePattern>/var/log/password-manager/application.%d{yyyy-MM-dd}.%i.json.gz</fileNamePattern>
-                <maxFileSize>100MB</maxFileSize>
-                <maxHistory>30</maxHistory>
-                <totalSizeCap>1GB</totalSizeCap>
-            </rollingPolicy>
         </appender>
         
-        <!-- Console appender for container logs -->
-        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-                <includeContext>true</includeContext>
-                <includeMdc>true</includeMdc>
-                <customFields>{"application":"password-manager-backend","environment":"production"}</customFields>
-            </encoder>
-        </appender>
-        
-        <root level="WARN">
-            <appender-ref ref="FILE"/>
+        <root level="INFO">
             <appender-ref ref="CONSOLE"/>
         </root>
         
@@ -87,33 +70,14 @@
 
     <!-- Security logger for audit events -->
     <logger name="SECURITY" level="INFO" additivity="false">
-        <springProfile name="prod">
-            <appender name="SECURITY_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-                <file>/var/log/password-manager/security.json</file>
-                <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-                    <includeContext>true</includeContext>
-                    <includeMdc>true</includeMdc>
-                    <customFields>{"application":"password-manager-backend","environment":"production","logType":"security"}</customFields>
-                </encoder>
-                <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-                    <fileNamePattern>/var/log/password-manager/security.%d{yyyy-MM-dd}.json.gz</fileNamePattern>
-                    <maxHistory>90</maxHistory>
-                    <totalSizeCap>500MB</totalSizeCap>
-                </rollingPolicy>
-            </appender>
-            <appender-ref ref="SECURITY_FILE"/>
-        </springProfile>
-        <springProfile name="!prod">
+        <springProfile name="prod,staging,dev">
             <appender-ref ref="CONSOLE"/>
         </springProfile>
     </logger>
 
     <!-- Performance logger for slow operations -->
     <logger name="PERFORMANCE" level="INFO" additivity="false">
-        <springProfile name="prod,staging">
-            <appender-ref ref="CONSOLE"/>
-        </springProfile>
-        <springProfile name="dev">
+        <springProfile name="prod,staging,dev">
             <appender-ref ref="CONSOLE"/>
         </springProfile>
     </logger>
