@@ -4,7 +4,7 @@
 # ============================================
 
 # Stage 1: Dependencies stage
-FROM node:20-slim AS deps
+FROM node:26-slim AS deps
 WORKDIR /app
 
 # Install necessary packages for native modules
@@ -25,7 +25,7 @@ RUN npm ci --only=production --ignore-scripts && \
     npm ci --ignore-scripts
 
 # Stage 2: Build stage
-FROM node:20-slim AS builder
+FROM node:26-slim AS builder
 WORKDIR /app
 
 # Copy dependencies from deps stage
@@ -44,7 +44,7 @@ RUN npm run build && \
     ls -lh .next
 
 # Stage 3: Runtime stage (minimal production image)
-FROM node:20-slim AS runner
+FROM node:26-slim AS runner
 WORKDIR /app
 
 # Install curl for health checks and dumb-init for proper signal handling
